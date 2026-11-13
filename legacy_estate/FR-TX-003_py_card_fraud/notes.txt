@@ -1,0 +1,2 @@
+fraud model v3 - retrain quarterly, owner JK
+alert threshold 0.35 agreed with ops (ask Dave)
