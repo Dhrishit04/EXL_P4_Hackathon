@@ -44,8 +44,6 @@ _Run `uv run modelproof benchmark` to fill this table._
 * **Deterministic decisions.** Risk tiers, RAG statuses, ratings and parity verdicts come from fixed thresholds in `config/policy.yaml`, set before any run.
 * **Evidence-linked claims.** Every documentation and validation claim cites evidence; a deterministic verifier marks unsupported claims instead of hiding them, and doc-versus-code drift is verified line by line.
 
-AI tools used to build this project are declared in [docs/AI_TOOLS.md](docs/AI_TOOLS.md).
-
 ## Limitations
 
 * The legacy estate is simulated (four models on public datasets); the SAS code is parsed, not executed, because SAS is not available. The R model is the only one with executed golden outputs.

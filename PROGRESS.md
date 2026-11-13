@@ -13,7 +13,7 @@ Times are Irish time, 13 Nov 2026. `main` is always green: `uv run pytest -q` an
 ## Not done yet
 * **C0 runtime LLM key**: none configured on this machine. Nothing has been run against a real LLM, so the prompts are untested live.
 * WP2 still to land: `parity.py`, `sandbox.py`, `agents/redevelop.py`, `prompts/redevelop.md`. The graph's `redevelop`, `validate` and `monitor` stages need them.
-* WP4 still to land: UI, `docs/architecture.mmd`, `docs/AI_TOOLS.md`, CI, live app link.
+* WP4 still to land: UI, `docs/architecture.mmd`, CI, live app link.
 * C5 live run and replay run, then commit `artifacts/` and `.cache/llm/`: `scripts/run_pipeline.sh` (needs the key and the items above).
 * README: Mermaid diagram, results table (generated), app and video links.
 * Part D: README links, no secrets in git, confirm who sends the email.

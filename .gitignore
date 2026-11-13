@@ -10,3 +10,12 @@ mlruns/
 .DS_Store
 *.egg-info/
 # NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
+
+# assistant/tool files and prompts stay out of the repo
+REDACTED
+AGENTS.md
+.REDACTED/
+.codex/
+.github/copilot-instructions.md
+team/
+docs/SPEC.md
