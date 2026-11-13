@@ -1,16 +1,19 @@
 # PROGRESS (WP1, Varun)
 
-Updated as work lands. Times are Irish time, 13 Nov 2026.
+Times are Irish time, 13 Nov 2026. `main` is always green: `uv run pytest -q` and `uv run ruff check .`.
 
-## Done
-* 17:40 Scaffold, contract (B1 to B11), config, schemas, audit, policy on `main`; tests green.
-* 17:50 `llm.py` (record/replay, usage log, row-data and untrusted-source guards), `inventory.py`.
-* 17:55 Agents discover, document, verify, validate; LangGraph gates, CLI; WP3 (harshit/validation) reviewed and merged.
-* 18:05 `scripts/benchmark.py`, `replay_check.py`, `run_pipeline.sh`; README draft.
+## Done and on `main`
+* Scaffold, `CONTRACT.md` (B1 to B11), `config`, `schemas` (exact B6), `audit` (hash chain), `config/policy.yaml` (exact B3).
+* `llm.py`: LangChain provider-agnostic, record/replay cache (`auto|live|record|replay`), usage log with cost, row-data guard, untrusted-source wrapper and guard sentence, repair retry, transient retries.
+* `inventory.py`; agents `discover`, `document`, `verify`, `validate` with prompts; `graph.py` (LangGraph, SQLite checkpoints, human gates, auto-approve recorded as `auto`, revalidation loop once, per-stage timings); `cli.py` (all B9 commands).
+* `scripts/benchmark.py` (metrics.json + README results table), `scripts/replay_check.py`, `scripts/run_pipeline.sh`.
+* Reviewed and merged WP3 (`harshit/validation`) and WP2 part 1 (`dhrishit/legacy-parity`: data, legacy estate, goldens, gold files, extractors, scanner).
+* Integration tests with the real extractors, scanner, tiering and renderers (only the LLM is scripted).
 
-## Waiting on
-* WP2 (Dhrishit): data, legacy estate, goldens, extractors, security, sandbox, parity, Redevelop agent, `eval/gold` in the B11 formats.
-* WP4 (Aayush): UI, `docs/architecture.mmd`, `docs/AI_TOOLS.md`, CI, live app link.
-
-## Next
-Merge WP2 and WP4 as they land, run `scripts/run_pipeline.sh` at 21:15, commit `artifacts/` and `.cache/llm/`, fill README links.
+## Not done yet
+* **C0 runtime LLM key**: none configured on this machine. Nothing has been run against a real LLM, so the prompts are untested live.
+* WP2 still to land: `parity.py`, `sandbox.py`, `agents/redevelop.py`, `prompts/redevelop.md`. The graph's `redevelop`, `validate` and `monitor` stages need them.
+* WP4 still to land: UI, `docs/architecture.mmd`, `docs/AI_TOOLS.md`, CI, live app link.
+* C5 live run and replay run, then commit `artifacts/` and `.cache/llm/`: `scripts/run_pipeline.sh` (needs the key and the items above).
+* README: Mermaid diagram, results table (generated), app and video links.
+* Part D: README links, no secrets in git, confirm who sends the email.
