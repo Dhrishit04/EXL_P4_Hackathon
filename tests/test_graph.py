@@ -185,3 +185,16 @@ def test_missing_renderer_does_not_stop_the_run(h, monkeypatch):
     monkeypatch.setitem(sys.modules, "modelproof.report.render", None)  # import raises
     assert graph.run("FR-TX-003", auto_approve=True)["status"] == "completed"
     assert any(e["event"] == "render.skipped" for e in audit.read())
+
+
+def test_stage_timings_written_for_benchmark(h):
+    graph.run("FR-TX-003", auto_approve=True)
+    lines = [
+        json.loads(x)
+        for x in (config.ARTIFACTS / "runs" / "t1" / "timings.jsonl").read_text().splitlines()
+    ]
+    assert [(x["model_id"], x["stage"]) for x in lines] == [
+        ("FR-TX-003", "discover"),
+        ("FR-TX-003", "document"),
+    ]
+    assert all(x["seconds"] >= 0 and x["llm_mode"] for x in lines)

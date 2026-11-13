@@ -10,6 +10,8 @@ Stage modules are imported lazily so this module imports even before every work 
 
 import importlib
 import json
+import os
+import time
 from collections import Counter
 from datetime import UTC, datetime
 from typing import TypedDict
@@ -134,10 +136,36 @@ def _record(m: str, ap: Approval) -> None:
 
 
 # ---------------------------------------------------------------- nodes
+def timed(stage: str):
+    """Append wall time of a stage node to artifacts/runs/<run_id>/timings.jsonl (read by the benchmark)."""
+
+    def deco(fn):
+        def wrapper(s: State) -> dict:
+            t0 = time.perf_counter()
+            out = fn(s)
+            d = config.ARTIFACTS / "runs" / llm.run_id()
+            d.mkdir(parents=True, exist_ok=True)
+            line = {
+                "model_id": s["model_id"],
+                "stage": stage,
+                "seconds": round(time.perf_counter() - t0, 3),
+            }
+            with open(d / "timings.jsonl", "a", encoding="utf-8") as f:
+                f.write(
+                    json.dumps(line | {"llm_mode": os.environ.get("LLM_MODE") or "auto"}) + "\n"
+                )
+            return out
+
+        return wrapper
+
+    return deco
+
+
 def _comment(s: State, gate: str) -> str:
     return s.get("feedback", {}).get(gate, "")
 
 
+@timed("discover")
 def n_discover(s: State) -> dict:
     m = s["model_id"]
     with llm.for_model(m):
@@ -146,6 +174,7 @@ def n_discover(s: State) -> dict:
     return {}
 
 
+@timed("document")
 def n_document(s: State) -> dict:
     m = s["model_id"]
     with llm.for_model(m):
@@ -154,6 +183,7 @@ def n_document(s: State) -> dict:
     return {}
 
 
+@timed("redevelop")
 def n_redevelop(s: State) -> dict:
     m = s["model_id"]
     with llm.for_model(m):
@@ -165,6 +195,7 @@ def n_redevelop(s: State) -> dict:
     return {}
 
 
+@timed("validate")
 def n_validate(s: State) -> dict:
     m = s["model_id"]
     with llm.for_model(m):
@@ -176,6 +207,7 @@ def n_validate(s: State) -> dict:
     return {}
 
 
+@timed("monitor")
 def n_monitor(s: State) -> dict:
     m, loops = s["model_id"], s.get("loops", 0)
     holdout = _mod("data").load_cr_pd_002("holdout")
