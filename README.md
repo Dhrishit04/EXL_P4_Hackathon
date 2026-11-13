@@ -7,7 +7,31 @@
 ## Architecture
 
 <!-- ARCH:START -->
-_Mermaid diagram from `docs/architecture.mmd` goes here._
+```mermaid
+flowchart LR
+    subgraph Estate["Legacy estate (SAS, R, Python)"]
+        SRC[Code and old documents]
+    end
+    SRC --> EX[Extractors and injection scanner<br/>deterministic facts with evidence ids]
+    EX --> D[Discover agent<br/>LLM proposes, code verifies drift,<br/>code sets the tier]
+    D --> G1{{Gate 1<br/>discovery}}
+    G1 --> DOC[Document agent<br/>evidence-linked claims]
+    DOC --> V[Claim verifier<br/>deterministic grounding score]
+    V --> G2{{Gate 2<br/>documentation}}
+    G2 --> R[Redevelop agent R to Python<br/>sandboxed, self-healing]
+    R --> P[Five-level parity certificate<br/>vs R golden outputs]
+    P --> G3{{Gate 3<br/>redevelopment}}
+    G3 --> VAL[Validation suite<br/>performance, stability, fairness, RAG]
+    VAL --> N[Validate agent<br/>narrative from results only]
+    N --> G4{{Gate 4<br/>validation}}
+    G4 --> M[Monitoring simulation<br/>simulated drift]
+    M -- trigger --> VAL
+    DOC -. other three models end here .-> OUT
+    M --> OUT[(artifacts/<br/>inventory, reports, certificates)]
+    OUT --> UI[Streamlit validator workbench]
+    AUD[(Hash-chained audit log)] -. every action and decision .- D & DOC & R & VAL & M
+    LLM[LLM with record and replay cache<br/>never sees row-level data] -. proposes .- D & DOC & R & N
+```
 <!-- ARCH:END -->
 
 ## Quickstart
