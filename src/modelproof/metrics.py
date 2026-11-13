@@ -87,7 +87,7 @@ def hosmer_lemeshow(y, p, groups=10) -> tuple[float, float]:
 
 def jeffreys_by_grade(df, grade="grade", pd_col="pd", y="DEFAULT", alpha=0.05) -> pd.DataFrame:
     _inputs(df[y], df[pd_col])
-    if not (alpha > 0 and alpha < 1):
+    if np.isnan(alpha) or alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be between zero and one")
     table = df.groupby(grade, observed=True, dropna=False).agg(
         N=(y, "size"), D=(y, "sum"), mean_pd=(pd_col, "mean")
