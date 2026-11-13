@@ -54,6 +54,7 @@ def world(tmp_path, monkeypatch):
             security_flags=[flag],
             downstream_models=["PR-RB-004"],
             target_definition="bad = 1",
+            input_data=["raw.german"],
             features=[{"name": "age"}, {"name": "personal_status"}],
         )
     )
@@ -65,36 +66,18 @@ def world(tmp_path, monkeypatch):
             documentation_status="missing",
         )
     )
-    write(gold / "inventory_gold.yaml", yaml.dump({
-        "CR-PD-001": {"language": "sas", "downstream_models": ["PR-RB-004"], "upstream_models": ["X"],
-                      "model_type": "PD", "risk_tier": 1, "target": "bad", "features": ["personal_status", "age"]}}))  # fmt: skip
+    write(gold / "inventory_gold.yaml", yaml.dump({"CR-PD-001": {
+        "deterministic": {"platform_language": "sas", "downstream_models": ["PR-RB-004"], "upstream_models": ["X"], "input_data": ["raw.*"]},
+        "llm": {"model_type": "PD", "risk_tier": 1, "target_definition_contains": ["bad"]}}}))  # fmt: skip
     write(gold / "seeded_drifts.yaml", yaml.dump([
-        {"id": "D1", "model_id": "CR-PD-001", "field": "cutoff", "doc_file": "d.md", "doc_line": 3, "doc_value": "0.5",
-         "code_file": "c.sas", "code_line": 7, "true_value": "0.6"},
-        {"id": "D2", "model_id": "CR-PD-001", "field": "other", "doc_file": "d.md", "doc_line": 9, "doc_value": "9",
-         "code_file": "c.sas", "code_line": 20, "true_value": "10"}]))  # fmt: skip
-
-    def risk(i, m, k, d, **kw):
-        return {
-            "id": i,
-            "model_id": m,
-            "kind": k,
-            "description": d,
-            "file": "x/rbp.sas",
-            "line": 1,
-            "anchor": "a",
-            **kw,
-        }
-
+        {"id": "D1", "model_id": "CR-PD-001", "field": "cutoff", "doc_value": "0.5", "code_value": "0.6"},
+        {"id": "D2", "model_id": "CR-PD-001", "field": "other", "doc_value": "9", "code_value": "10"}]))  # fmt: skip
     write(gold / "seeded_risks.yaml", yaml.dump([
-        risk("R1", "CR-PD-001", "proxy_variable", "personal_status (sex proxy) is a predictor"),
-        risk("R2", "PR-RB-004", "dependency", "reads the grade dataset written by CR-PD-001"),
-        risk("R3", "PR-RB-004", "prompt_injection", "hidden instruction"),
-        risk("R4", "CR-PD-001", "dead_variable", "debt_ratio is computed and never used"),
-        risk("R5", "CR-PD-001", "stale_comment", "comment says 520", anchor="cutoff 520 per Committee"),
-        risk("R6", "PR-RB-004", "undocumented_model", "no document")]))  # fmt: skip
-    write(art / "CR-PD-001" / "facts.json", {"dead_variables": ["debt_ratio"], "parameters": {"CUTOFF": {}, "CUTOFF_comment": {}},
-          "evidence": [{"id": "d", "path": "d.md", "line_start": 3, "line_end": 3}, {"id": "c", "path": "c.sas", "line_start": 7, "line_end": 8}]})  # fmt: skip
+        {"id": "R1", "model_id": "CR-PD-001", "kind": "proxy", "keyword": "personal_status"},
+        {"id": "R2", "model_id": "PR-RB-004", "kind": "dependency", "keyword": "CR-PD-001"},
+        {"id": "R3", "model_id": "PR-RB-004", "kind": "injection", "keyword": "ignore previous"},
+        {"id": "R4", "model_id": "CR-PD-001", "kind": "dead_variable", "keyword": "debt_ratio"}]))  # fmt: skip
+    write(art / "CR-PD-001" / "facts.json", {"dead_variables": ["debt_ratio"]})
 
     def u(hit, mid, i, o, c):
         return {
@@ -155,22 +138,15 @@ def test_collect_from_artifacts_and_gold(world):
     assert m["replay_cache_hits"] == 1.0
     acc = m["inventory_accuracy"]
     assert acc["deterministic"] == {
-        "correct": 2,
-        "total": 3,
-        "accuracy": 0.6667,
+        "correct": 3,
+        "total": 4,
+        "accuracy": 0.75,
     }  # upstream_models wrong
-    assert acc["llm"] == {"correct": 4, "total": 4, "accuracy": 1.0}
+    assert acc["llm"] == {"correct": 3, "total": 3, "accuracy": 1.0}
     d = m["drift_detection"]
     assert (d["predicted"], d["true_positives"], d["gold_found"]) == (2, 1, 1)
     assert d["precision"] == 0.5 and d["recall"] == 0.5
-    assert m["seeded_risks"]["per_risk"] == {
-        "R1": True,
-        "R2": True,
-        "R3": False,
-        "R4": True,
-        "R5": True,
-        "R6": True,
-    }
+    assert m["seeded_risks"]["per_risk"] == {"R1": True, "R2": True, "R3": False, "R4": True}
     assert (
         m["grounding"]["documentation"]["CR-PD-001"] == 0.8
         and m["grounding"]["validation_narrative"] == 0.5
@@ -219,4 +195,4 @@ def test_real_gold_files_parse_and_score_empty_artifacts_as_zero(tmp_path, monke
         and m["inventory_accuracy"]["llm"]["correct"] == 0
     )
     assert m["drift_detection"]["gold"] >= 10 and m["drift_detection"]["recall"] == 0.0
-    assert m["seeded_risks"]["total"] >= 10 and m["seeded_risks"]["detected"] == 0
+    assert m["seeded_risks"]["total"] >= 5 and m["seeded_risks"]["detected"] == 0

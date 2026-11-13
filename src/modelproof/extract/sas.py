@@ -25,7 +25,10 @@ def extract(path: Path, ev: Callable[[int, int], str]) -> dict:
         s = m.group().strip(" \n\t;")
         a = clean.count("\n", 0, m.start() + len(m.group()) - len(m.group().lstrip())) + 1
         e = ev(a, clean.count("\n", 0, m.end()) + 1)
-        param = lambda k, v, e=e: r["parameters"].setdefault(k, {"value": v, "evidence_id": e})
+
+        def param(k: str, v: str) -> None:
+            r["parameters"].setdefault(k, {"value": v, "evidence_id": e})
+
         s = re.sub(r"^ELSE\s+", "", s, flags=re.IGNORECASE)
         if x := re.match(r"%LET\s+(\w+)\s*=\s*(.*)$", s, re.IGNORECASE):
             param(x[1], x[2].strip())

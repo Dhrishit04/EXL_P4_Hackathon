@@ -2,21 +2,22 @@
 from typing import Literal
 
 import pandas as pd
-from modelproof.config import DATA_PROCESSED
+
+from modelproof import config
 
 PROTECTED = ["SEX", "MARRIAGE", "AGE_BAND", "EDUCATION"]
 
 
 def load_cr_pd_002(split: Literal["dev", "holdout", "edge"]) -> pd.DataFrame:
-    return pd.read_csv(DATA_PROCESSED / f"cr_pd_002_{split}.csv")
+    return pd.read_csv(config.DATA_PROCESSED / f"cr_pd_002_{split}.csv")
 
 
 def load_german() -> pd.DataFrame:
-    return pd.read_csv(DATA_PROCESSED / "german_credit.csv")
+    return pd.read_csv(config.DATA_PROCESSED / "german_credit.csv")
 
 
 def load_fraud() -> pd.DataFrame:
-    return pd.read_csv(DATA_PROCESSED / "fraud_transactions.csv")
+    return pd.read_csv(config.DATA_PROCESSED / "fraud_transactions.csv")
 
 
 def age_band(age: pd.Series) -> pd.Series:

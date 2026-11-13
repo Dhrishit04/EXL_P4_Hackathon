@@ -58,9 +58,10 @@ def test_discover_all_models_with_real_modules(scripted_llm):
         "PR-RB-004"
     ]
     assert recs["PR-RB-004"].upstream_models == ["CR-PD-001"]
-    assert {m for m, r in recs.items() if r.security_flags} == {
-        "PR-RB-004"
-    }  # the seeded injection, only there
+    assert {m: [f.area for f in r.security_flags] for m, r in recs.items() if r.security_flags} == {
+        "CR-PD-001": ["fairness"],  # the seeded personal_status proxy
+        "PR-RB-004": ["prompt_injection"],  # the seeded injection
+    }
     assert all(
         r.risk_tier == 3 for r in recs.values()
     )  # materiality M + complexity L, from tiering not the LLM
