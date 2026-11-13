@@ -45,7 +45,7 @@ def german() -> pd.DataFrame:
     df["bad"] = (df["class"] == "bad").astype(int)
     df = df.drop(columns="class")
     df.insert(0, "ID", np.arange(1, len(df) + 1))
-    assert len(df) == 1000 and df.bad.mean() == 0.3
+    assert len(df) == 1000 and df.bad.sum() == 300
     df.to_csv(DATA_RAW / "german_raw.csv", index=False)
     return df
 

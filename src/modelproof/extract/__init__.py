@@ -28,7 +28,7 @@ def _stale_comment(lines: list[str], line: int, name: str, value: str) -> tuple[
     """A number written beside `name` in a comment on the previous or same line that differs from the code value."""
     pat = re.compile(rf"{name.replace('_', '[ _]')}\W+(\d[\d.]*)", re.IGNORECASE)
     for n in (line - 1, line):
-        c = re.search(r"/\*(.*?)\*/|#(.*)$", lines[n - 1]) if n else None
+        c = re.search(r"(?:/\*(.*?)\*/)|(?:#(.*)$)", lines[n - 1]) if n else None
         if c and (m := pat.search(c[1] or c[2])) and m[1] != value:
             return n, m[1]
 
