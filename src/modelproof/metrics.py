@@ -87,9 +87,13 @@ def hosmer_lemeshow(y, p, groups=10) -> tuple[float, float]:
     return statistic, float(stats.chi2.sf(statistic, dof)) if dof > 0 else float("nan")
 
 
-def jeffreys_by_grade(df, grade="grade", pd_col="pd", y="DEFAULT", alpha=0.05) -> pd.DataFrame:
+def jeffreys_by_grade(
+    df: pd.DataFrame, grade: str = "grade", pd_col: str = "pd",
+    y: str = "DEFAULT", alpha: float = 0.05,
+) -> pd.DataFrame:
     _inputs(df[y], df[pd_col])
-    if not np.isfinite(alpha) or alpha <= 0 or alpha >= 1:
+    alpha = float(alpha)
+    if not np.isfinite(alpha) or alpha <= 0.0 or alpha >= 1.0:
         raise ValueError("alpha must be between zero and one")
     table = df.groupby(grade, observed=True, dropna=False).agg(
         N=(y, "size"), D=(y, "sum"), mean_pd=(pd_col, "mean")
