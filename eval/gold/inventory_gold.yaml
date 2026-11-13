@@ -55,7 +55,7 @@ FR-TX-003:
 PR-RB-004:
   model_type: pricing
   language: SAS
-  target: null
+  target: apr
   features:
   - grade
   - p_1
