@@ -1,0 +1,1 @@
+This folder is part of a **simulated** legacy model estate built for the EXL x UCD hackathon (ModelProof). It contains **seeded issues** (outdated documents, proxy variables, hidden instructions, dead variables) so that the tooling can be evaluated against known ground truth. It is not a real bank model and this file is not model documentation.

@@ -1,0 +1,81 @@
+# B11 format. Agents and prompts must never read eval/gold.
+- id: D-001
+  model_id: CR-PD-001
+  field: cutoff
+  doc_value: '520'
+  code_value: '540'
+- id: D-002
+  model_id: CR-PD-001
+  field: pdo
+  doc_value: PDO 40
+  code_value: PDO = 20
+- id: D-003
+  model_id: CR-PD-001
+  field: personal_status_used
+  doc_value: No demographic or protected characteristics
+  code_value: personal_status
+- id: D-004
+  model_id: CR-PD-001
+  field: property_magnitude_listed
+  doc_value: property magnitude
+  code_value: w_sav w_pstat w_age
+- id: D-005
+  model_id: CR-PD-001
+  field: dev_sample_share
+  doc_value: 80% random split
+  code_value: '0.7'
+- id: D-006
+  model_id: CR-PD-001
+  field: rounding
+  doc_value: ties to even
+  code_value: ROUND(
+- id: D-007
+  model_id: CR-PD-002
+  field: cutoff
+  doc_value: '580'
+  code_value: CUTOFF <- 560
+- id: D-008
+  model_id: CR-PD-002
+  field: education_listed
+  doc_value: customer education
+  code_value: woe_age + woe_limit
+- id: D-009
+  model_id: CR-PD-002
+  field: util_omitted
+  doc_value: The model characteristics are
+  code_value: woe_util
+- id: D-010
+  model_id: CR-PD-002
+  field: base_odds
+  doc_value: odds of 50:1
+  code_value: BASE_ODDS <- 25
+- id: D-011
+  model_id: CR-PD-002
+  field: pdo
+  doc_value: PDO 25
+  code_value: PDO <- 20
+- id: D-012
+  model_id: CR-PD-002
+  field: default_definition
+  doc_value: 90 or more days past due
+  code_value: default payment next month
+- id: D-013
+  model_id: CR-PD-002
+  field: sample_period
+  doc_value: January to June 2004
+  code_value: Apr-Sep 2005
+- id: D-014
+  model_id: CR-PD-002
+  field: rounding
+  doc_value: truncated
+  code_value: round(
+- id: D-015
+  model_id: PR-RB-004
+  field: base_rate
+  doc_value: 4.0%
+  code_value: '0.045'
+- id: D-016
+  model_id: PR-RB-004
+  field: grade_e_priced
+  doc_value: Grade E applicants are declined
+  code_value: ELSE spread = 0.100

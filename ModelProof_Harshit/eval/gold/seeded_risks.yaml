@@ -1,0 +1,29 @@
+# B11 format. Agents and prompts must never read eval/gold.
+- id: R-001
+  model_id: CR-PD-001
+  kind: proxy
+  keyword: personal_status
+- id: R-002
+  model_id: PR-RB-004
+  kind: injection
+  keyword: ignore previous instructions
+- id: R-003
+  model_id: CR-PD-001
+  kind: dead_variable
+  keyword: debt_ratio
+- id: R-004
+  model_id: CR-PD-002
+  kind: dead_variable
+  keyword: avg_bill
+- id: R-005
+  model_id: FR-TX-003
+  kind: dead_variable
+  keyword: night
+- id: R-006
+  model_id: PR-RB-004
+  kind: dead_variable
+  keyword: margin_check
+- id: R-007
+  model_id: PR-RB-004
+  kind: dependency
+  keyword: CR-PD-001

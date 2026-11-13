@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+matplotlib
+pydantic>=2
+pyyaml
+python-dotenv
+jinja2

@@ -1,0 +1,254 @@
+[
+{
+  "model_id": "CR-PD-001",
+  "name": "FIXTURE example model CR-PD-001",
+  "version": "1.0",
+  "purpose": "FIXTURE synthetic example only",
+  "business_use": "FIXTURE not a real business use",
+  "portfolio": "FIXTURE portfolio",
+  "model_type": "PD",
+  "methodology": "FIXTURE illustrative methodology",
+  "platform_language": "SAS",
+  "source_files": [],
+  "input_data": [
+    "FIXTURE synthetic input"
+  ],
+  "features": [
+    {
+      "name": "FIXTURE illustrative feature",
+      "transformation": "FIXTURE identity",
+      "evidence_id": null
+    }
+  ],
+  "target_definition": "FIXTURE illustrative target",
+  "outputs": [
+    "FIXTURE illustrative output"
+  ],
+  "upstream_models": [],
+  "downstream_models": [],
+  "owner_role": "FIXTURE owner",
+  "developer_role": "FIXTURE developer",
+  "validator_role": "FIXTURE validator",
+  "materiality": "M",
+  "materiality_rationale": "FIXTURE illustrative rationale",
+  "complexity": "M",
+  "complexity_rationale": "FIXTURE illustrative rationale",
+  "risk_tier": 2,
+  "ai_ml_flag": false,
+  "regulatory_use": "FIXTURE not used for a regulatory decision",
+  "documentation_status": "outdated",
+  "doc_code_drifts": [
+    {
+      "field": "FIXTURE illustrative field",
+      "doc_value": "FIXTURE documented value",
+      "code_value": "FIXTURE code value",
+      "doc_evidence_id": "FIXTURE-DOC-1",
+      "code_evidence_id": "FIXTURE-CODE-1",
+      "verified": true
+    }
+  ],
+  "security_flags": [],
+  "last_validated": "2026-01-01",
+  "next_validation_due": "2027-01-01",
+  "monitoring_kpis": [
+    "FIXTURE PSI"
+  ],
+  "limitations": [
+    "FIXTURE synthetic example; not a model result"
+  ],
+  "status": "documented",
+  "approvals": []
+},
+{
+  "model_id": "CR-PD-002",
+  "name": "FIXTURE example model CR-PD-002",
+  "version": "1.0",
+  "purpose": "FIXTURE synthetic example only",
+  "business_use": "FIXTURE not a real business use",
+  "portfolio": "FIXTURE portfolio",
+  "model_type": "PD",
+  "methodology": "FIXTURE illustrative methodology",
+  "platform_language": "R",
+  "source_files": [],
+  "input_data": [
+    "FIXTURE synthetic input"
+  ],
+  "features": [
+    {
+      "name": "FIXTURE illustrative feature",
+      "transformation": "FIXTURE identity",
+      "evidence_id": null
+    }
+  ],
+  "target_definition": "FIXTURE illustrative target",
+  "outputs": [
+    "FIXTURE illustrative output"
+  ],
+  "upstream_models": [],
+  "downstream_models": [],
+  "owner_role": "FIXTURE owner",
+  "developer_role": "FIXTURE developer",
+  "validator_role": "FIXTURE validator",
+  "materiality": "M",
+  "materiality_rationale": "FIXTURE illustrative rationale",
+  "complexity": "M",
+  "complexity_rationale": "FIXTURE illustrative rationale",
+  "risk_tier": 2,
+  "ai_ml_flag": false,
+  "regulatory_use": "FIXTURE not used for a regulatory decision",
+  "documentation_status": "outdated",
+  "doc_code_drifts": [
+    {
+      "field": "FIXTURE illustrative field",
+      "doc_value": "FIXTURE documented value",
+      "code_value": "FIXTURE code value",
+      "doc_evidence_id": "FIXTURE-DOC-1",
+      "code_evidence_id": "FIXTURE-CODE-1",
+      "verified": true
+    }
+  ],
+  "security_flags": [],
+  "last_validated": "2026-01-01",
+  "next_validation_due": "2027-01-01",
+  "monitoring_kpis": [
+    "FIXTURE PSI"
+  ],
+  "limitations": [
+    "FIXTURE synthetic example; not a model result"
+  ],
+  "status": "validated",
+  "approvals": []
+},
+{
+  "model_id": "FR-TX-003",
+  "name": "FIXTURE example model FR-TX-003",
+  "version": "1.0",
+  "purpose": "FIXTURE synthetic example only",
+  "business_use": "FIXTURE not a real business use",
+  "portfolio": "FIXTURE portfolio",
+  "model_type": "fraud",
+  "methodology": "FIXTURE illustrative methodology",
+  "platform_language": "Python",
+  "source_files": [],
+  "input_data": [
+    "FIXTURE synthetic input"
+  ],
+  "features": [
+    {
+      "name": "FIXTURE illustrative feature",
+      "transformation": "FIXTURE identity",
+      "evidence_id": null
+    }
+  ],
+  "target_definition": "FIXTURE illustrative target",
+  "outputs": [
+    "FIXTURE illustrative output"
+  ],
+  "upstream_models": [],
+  "downstream_models": [],
+  "owner_role": "FIXTURE owner",
+  "developer_role": "FIXTURE developer",
+  "validator_role": "FIXTURE validator",
+  "materiality": "M",
+  "materiality_rationale": "FIXTURE illustrative rationale",
+  "complexity": "M",
+  "complexity_rationale": "FIXTURE illustrative rationale",
+  "risk_tier": 2,
+  "ai_ml_flag": false,
+  "regulatory_use": "FIXTURE not used for a regulatory decision",
+  "documentation_status": "outdated",
+  "doc_code_drifts": [
+    {
+      "field": "FIXTURE illustrative field",
+      "doc_value": "FIXTURE documented value",
+      "code_value": "FIXTURE code value",
+      "doc_evidence_id": "FIXTURE-DOC-1",
+      "code_evidence_id": "FIXTURE-CODE-1",
+      "verified": true
+    }
+  ],
+  "security_flags": [],
+  "last_validated": "2026-01-01",
+  "next_validation_due": "2027-01-01",
+  "monitoring_kpis": [
+    "FIXTURE PSI"
+  ],
+  "limitations": [
+    "FIXTURE synthetic example; not a model result"
+  ],
+  "status": "discovered",
+  "approvals": []
+},
+{
+  "model_id": "PR-RB-004",
+  "name": "FIXTURE example model PR-RB-004",
+  "version": "1.0",
+  "purpose": "FIXTURE synthetic example only",
+  "business_use": "FIXTURE not a real business use",
+  "portfolio": "FIXTURE portfolio",
+  "model_type": "pricing",
+  "methodology": "FIXTURE illustrative methodology",
+  "platform_language": "SAS",
+  "source_files": [],
+  "input_data": [
+    "FIXTURE synthetic input"
+  ],
+  "features": [
+    {
+      "name": "FIXTURE illustrative feature",
+      "transformation": "FIXTURE identity",
+      "evidence_id": null
+    }
+  ],
+  "target_definition": "FIXTURE illustrative target",
+  "outputs": [
+    "FIXTURE illustrative output"
+  ],
+  "upstream_models": [],
+  "downstream_models": [],
+  "owner_role": "FIXTURE owner",
+  "developer_role": "FIXTURE developer",
+  "validator_role": "FIXTURE validator",
+  "materiality": "M",
+  "materiality_rationale": "FIXTURE illustrative rationale",
+  "complexity": "M",
+  "complexity_rationale": "FIXTURE illustrative rationale",
+  "risk_tier": 2,
+  "ai_ml_flag": false,
+  "regulatory_use": "FIXTURE not used for a regulatory decision",
+  "documentation_status": "outdated",
+  "doc_code_drifts": [
+    {
+      "field": "FIXTURE illustrative field",
+      "doc_value": "FIXTURE documented value",
+      "code_value": "FIXTURE code value",
+      "doc_evidence_id": "FIXTURE-DOC-1",
+      "code_evidence_id": "FIXTURE-CODE-1",
+      "verified": true
+    }
+  ],
+  "security_flags": [
+    {
+      "id": "FIXTURE-FINDING-1",
+      "model_id": "PR-RB-004",
+      "area": "FIXTURE security",
+      "severity": "medium",
+      "ss123_principle": "P4",
+      "description": "FIXTURE seeded example security flag",
+      "evidence_ids": [],
+      "recommendation": "FIXTURE review this synthetic example",
+      "status": "open"
+    }
+  ],
+  "last_validated": "2026-01-01",
+  "next_validation_due": "2027-01-01",
+  "monitoring_kpis": [
+    "FIXTURE PSI"
+  ],
+  "limitations": [
+    "FIXTURE synthetic example; not a model result"
+  ],
+  "status": "documented",
+  "approvals": []
+}
+]

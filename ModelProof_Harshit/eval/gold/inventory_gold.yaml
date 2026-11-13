@@ -1,0 +1,67 @@
+# B11 format. risk_tier follows the policy tier matrix. Agents and prompts must never read eval/gold.
+CR-PD-001:
+  deterministic:
+    platform_language: SAS
+    documentation_status: outdated
+    upstream_models: []
+    downstream_models:
+    - PR-RB-004
+    input_data:
+    - raw.german_credit
+  llm:
+    model_type: PD
+    materiality: H
+    complexity: L
+    risk_tier: 2
+    ai_ml_flag: false
+    target_definition_contains:
+    - bad
+CR-PD-002:
+  deterministic:
+    platform_language: R
+    documentation_status: outdated
+    upstream_models: []
+    downstream_models: []
+    input_data:
+    - cr_pd_002_*.csv
+  llm:
+    model_type: PD
+    materiality: H
+    complexity: M
+    risk_tier: 1
+    ai_ml_flag: false
+    target_definition_contains:
+    - default
+FR-TX-003:
+  deterministic:
+    platform_language: Python
+    documentation_status: missing
+    upstream_models: []
+    downstream_models: []
+    input_data:
+    - data/processed/fraud_transactions.csv
+  llm:
+    model_type: fraud
+    materiality: M
+    complexity: H
+    risk_tier: 1
+    ai_ml_flag: true
+    target_definition_contains:
+    - fraud
+PR-RB-004:
+  deterministic:
+    platform_language: SAS
+    documentation_status: outdated
+    upstream_models:
+    - CR-PD-001
+    downstream_models: []
+    input_data:
+    - cr001.app_grades
+  llm:
+    model_type: pricing
+    materiality: M
+    complexity: L
+    risk_tier: 3
+    ai_ml_flag: false
+    target_definition_contains:
+    - apr

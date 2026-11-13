@@ -1,0 +1,26 @@
+{
+  "model_id": "FR-TX-003",
+  "claims": [
+    {
+      "section": "FIXTURE Overview",
+      "text": "FIXTURE illustrative documentation claim",
+      "evidence_ids": [
+        "FIXTURE-CODE-1"
+      ],
+      "status": "supported",
+      "reason": "FIXTURE supported only by synthetic evidence"
+    }
+  ],
+  "grounding_score": 0.91,
+  "drifts": [
+    {
+      "field": "FIXTURE illustrative field",
+      "doc_value": "FIXTURE documented value",
+      "code_value": "FIXTURE code value",
+      "doc_evidence_id": "FIXTURE-DOC-1",
+      "code_evidence_id": "FIXTURE-CODE-1",
+      "verified": true
+    }
+  ],
+  "generated_at": "2026-01-01T00:00:00Z"
+}
