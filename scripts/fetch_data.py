@@ -8,11 +8,12 @@ is_fraud ~ Bernoulli(sigmoid(a + 0.35 ln amount + 1.2 night + 1.5 mismatch - 1.3
 """
 import numpy as np
 import pandas as pd
-from modelproof.config import DATA_PROCESSED, DATA_RAW
 from scipy.optimize import brentq
 from scipy.special import expit
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
+
+from modelproof.config import DATA_PROCESSED, DATA_RAW
 
 SEED = 42
 TW_COLS = ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6",

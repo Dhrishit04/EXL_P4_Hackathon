@@ -7,7 +7,8 @@ from modelproof import config, extract, security
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLD = ROOT / "eval" / "gold"
-INV = yaml.safe_load((GOLD / "inventory_gold.yaml").read_text())
+INV = {m: v["deterministic"] for m, v in yaml.safe_load((GOLD / "inventory_gold.yaml").read_text()).items()}
+TARGET = {"CR-PD-001": "bad", "CR-PD-002": "DEFAULT", "FR-TX-003": "is_fraud", "PR-RB-004": "apr"}
 RISKS = yaml.safe_load((GOLD / "seeded_risks.yaml").read_text())
 DRIFTS = yaml.safe_load((GOLD / "seeded_drifts.yaml").read_text())
 PARAMS = {  # code side of the seeded drifts that are named constants
@@ -19,19 +20,14 @@ PARAMS = {  # code side of the seeded drifts that are named constants
 COMMENTS = {"CR-PD-001": ("CUTOFF", "520"), "CR-PD-002": ("PDO", "25"), "PR-RB-004": ("BASE_RATE", "4.0")}
 
 
-@pytest.fixture(autouse=True)
-def tmp_artifacts(tmp_path, monkeypatch):
-    monkeypatch.setenv("MODELPROOF_ARTIFACTS", str(tmp_path))
-    monkeypatch.setattr(config, "ARTIFACTS", tmp_path)
-
-
 @pytest.mark.parametrize("mid", INV)
-def test_facts_match_gold_inventory_and_dead_variables(mid, tmp_path):
+def test_facts_match_gold_inventory_and_dead_variables(mid):
     f = extract.facts_for(mid)
-    assert f.language == INV[mid]["language"] and f.target == INV[mid]["target"]
-    assert set(f.dead_variables) == {r["description"].split()[0] for r in RISKS if r["kind"] == "dead_variable" and r["model_id"] == mid}
+    assert f.language == INV[mid]["platform_language"] and f.target == TARGET[mid]
+    assert set(f.dead_variables) == {r["keyword"] for r in RISKS if r["kind"] == "dead_variable" and r["model_id"] == mid}
     assert f.dependencies == INV[mid]["upstream_models"]
-    assert (tmp_path / mid / "facts.json").exists()
+    assert set(f.datasets_read) == set(INV[mid]["input_data"])
+    assert (config.ARTIFACTS / mid / "facts.json").exists()
     assert not any("SCENARIO" in x["path"] or "golden" in x["path"] for x in f.files)
 
 
@@ -58,18 +54,24 @@ def test_model_calls_and_old_docs_are_evidence():
     assert "w_pstat" in next(c for c in sas.model_calls if c["kind"] == "PROC LOGISTIC")["text"]
     assert py.model_calls[0]["text"].startswith("HistGradientBoostingClassifier")
     assert "PR-RB-004" not in r.dependencies
-    for d in DRIFTS:  # every planted doc line is citable
-        ev = [e for e in extract.facts_for(d["model_id"]).evidence if e.kind == "doc" and e.path == d["doc_file"] and e.line_start == d["doc_line"]]
-        assert ev and d["doc_anchor"] in ev[0].excerpt, d["id"]
+    for d in DRIFTS:  # both sides of every planted drift are citable evidence
+        ev = extract.facts_for(d["model_id"]).evidence
+        assert any(e.kind == "doc" and d["doc_value"] in e.excerpt for e in ev), d["id"]
+        assert any(e.kind == "code" and d["code_value"] in e.excerpt for e in ev), d["id"]
 
 
-def test_scanner_finds_only_the_seeded_injection():
-    hits = security.scan("PR-RB-004")
-    inj = next(r for r in RISKS if r["kind"] == "prompt_injection")
-    assert len(hits) == 1 and hits[0].severity == "high" and hits[0].ss123_principle == "P2"
-    assert hits[0].evidence_ids == [extract.evidence_id("PR-RB-004", Path(inj["file"]).name, inj["line"], inj["line"])]
-    assert all(security.scan(m) == [] for m in ("CR-PD-001", "CR-PD-002", "FR-TX-003"))
-    assert any(e.id == hits[0].evidence_ids[0] for e in extract.facts_for("PR-RB-004").evidence)
+def test_scanner_finds_exactly_the_seeded_injection_and_proxy():
+    flags = {m: security.scan(m) for m in INV}
+    inj = next(r for r in RISKS if r["kind"] == "injection")
+    proxy = next(r for r in RISKS if r["kind"] == "proxy")
+    (hit,) = flags[inj["model_id"]]
+    assert inj["keyword"] in hit.description and hit.severity == "high" and hit.ss123_principle == "P2"
+    (px,) = flags[proxy["model_id"]]
+    assert proxy["keyword"] in px.description and px.severity == "high"
+    assert flags["CR-PD-002"] == [] and flags["FR-TX-003"] == []
+    for m, fs in flags.items():  # findings cite evidence that exists in the facts
+        ev = {e.id for e in extract.facts_for(m).evidence}
+        assert all(i in ev for f in fs for i in f.evidence_ids)
 
 
 @pytest.mark.parametrize(("mid", "needle"), [("CR-PD-001", "ROUND("), ("CR-PD-002", "round(")])

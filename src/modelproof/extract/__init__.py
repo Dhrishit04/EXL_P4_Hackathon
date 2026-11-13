@@ -3,10 +3,9 @@ import hashlib
 import re
 from pathlib import Path
 
-from modelproof.schemas import Evidence, Facts
-
 from modelproof import config
 from modelproof.extract import py, r, sas
+from modelproof.schemas import Evidence, Facts
 
 LANG = {".sas": ("SAS", sas), ".R": ("R", r), ".py": ("Python", py)}
 
@@ -17,8 +16,7 @@ def evidence_id(model_id: str, name: str, a: int, b: int) -> str:
 
 def source_files(model_id: str) -> list[Path]:
     """Code and old documents of a model folder. SCENARIO.md (estate disclosure) and golden/ are not model inputs."""
-    root = config.LEGACY / config.MODELS[model_id]
-    return sorted(p for p in root.iterdir() if p.is_file() and p.name != "SCENARIO.md" and p.suffix in {*LANG, ".md", ".txt"})
+    return sorted(p for p in config.model_dir(model_id).iterdir() if p.is_file() and p.name != "SCENARIO.md" and p.suffix in {*LANG, ".md", ".txt"})
 
 
 def _resolve(name: str, libs: dict[str, str]) -> str:
@@ -35,12 +33,12 @@ def _stale_comment(lines: list[str], line: int, name: str, value: str) -> tuple[
             return n, m[1]
 
 
-def _collect(model_id: str) -> dict:
+def collect(model_id: str) -> dict:
     from modelproof import security  # lazy: security imports this package
 
     ev: dict[str, Evidence] = {}
     out = {"files": [], "lang": None, "libs": {}, "calls": [], "params": {}, "target": None,
-           **{k: [] for k in ("datasets_read", "datasets_written", "variables_created", "variables_used")}}
+           "proxy": [], **{k: [] for k in ("datasets_read", "datasets_written", "variables_created", "variables_used")}}
     hit_lines = {(p, n) for p, n, _ in security.hits(model_id)}
     for p in source_files(model_id):
         data = p.read_bytes()
@@ -51,7 +49,7 @@ def _collect(model_id: str) -> dict:
             b = b or a
             i = evidence_id(model_id, p.name, a, b)
             ev.setdefault(i, Evidence(id=i, kind="code" if code else "doc", path=rel, line_start=a, line_end=b,
-                                      excerpt="\n".join(lines[a - 1:b])[:400], sha256=sha))
+                                      excerpt="\n".join(lines[a - 1:b])[:1500], sha256=sha))
             return i
 
         out["files"].append({"path": rel, "sha256": sha, "n_lines": len(lines), "kind": "code" if code else "doc"})
@@ -64,6 +62,13 @@ def _collect(model_id: str) -> dict:
             continue
         out["lang"], mod = LANG[p.suffix]
         x = mod.extract(p, mk)
+        for a in range(1, len(lines) + 1, 6):  # 6 line blocks so every code line is citable
+            if any(ln.strip() for ln in lines[a - 1:a + 5]):
+                mk(a, min(a + 5, len(lines)))
+        for v in dict.fromkeys(x["variables_used"]):
+            if v.lower() in security.PROXY:
+                n = next(i for i, ln in enumerate(lines, 1) if re.search(rf"\b{v}\b", ln, re.I) and not ln.lstrip().startswith(("/*", "#", "*")))
+                out["proxy"].append((v, mk(n), lines[n - 1].strip()))
         for k in ("datasets_read", "datasets_written", "variables_created", "variables_used"):
             out[k] += x[k]
         for name, v in x["parameters"].items():
@@ -78,15 +83,18 @@ def _collect(model_id: str) -> dict:
 
 
 def facts_for(model_id: str) -> Facts:
-    c = _collect(model_id)
+    c = collect(model_id)
     reads = {_resolve(n, c["libs"]) for n in c["datasets_read"]}
     deps = []
     for other in config.MODELS:
         if other != model_id:
-            o = _collect(other)
+            o = collect(other)
             if reads & {_resolve(n, o["libs"]) for n in o["datasets_written"]}:
                 deps.append(other)
-    uniq = lambda xs: list(dict.fromkeys(xs))
+
+    def uniq(xs: list) -> list:
+        return list(dict.fromkeys(xs))
+
     used = set(c["variables_used"])
     facts = Facts(
         model_id=model_id, language=c["lang"], files=c["files"], datasets_read=uniq(c["datasets_read"]),

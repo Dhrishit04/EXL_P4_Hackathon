@@ -8,7 +8,7 @@ CONST = re.compile(r"^([A-Z][A-Z0-9_]*)\s*<-\s*(-?[\d.]+|c\([-\d.,\s]+\))\s*$")
 
 
 def tokens(clean: list[str]) -> list[tuple[int, str, str]]:
-    """(line, type, text); type in sym | fn | str | assign | op. Function formals are skipped."""
+    """(line, type, text); type in sym | fn | arg | str | assign | op. Function formals are skipped."""
     out, depth, formals = [], 0, None
     for n, line in enumerate(clean, 1):
         for m in TOK.finditer(line):
@@ -27,7 +27,8 @@ def tokens(clean: list[str]) -> list[tuple[int, str, str]]:
                     continue
                 if t == "function":
                     formals = depth
-                out.append((n, "fn" if nxt == "(" else "sym", t))
+                is_arg = depth > 0 and re.match(r"=(?!=)", line[m.end():].lstrip())
+                out.append((n, "fn" if nxt == "(" else "arg" if is_arg else "sym", t))
             else:
                 out.append((n, "op", t))
     return out
@@ -51,7 +52,9 @@ def extract(path: Path, ev: Callable[[int, int], str]) -> dict:
                 j += 2
             lhs.add(j)
             r["variables_created"].append(toks[j][2])
-    r["variables_used"] = [t for i, (_, tp, t) in enumerate(toks) if tp in ("sym", "fn") and i not in lhs]
+    made = set(r["variables_created"])  # a string naming a created variable counts as a use (dynamic access, b[[ft]])
+    r["variables_used"] = [t for i, (_, tp, t) in enumerate(toks)
+                           if (tp in ("sym", "fn") and i not in lhs) or (tp == "str" and t in made)]
     for i, (n, tp, t) in enumerate(toks):
         if tp != "fn" or t not in ("read.csv", "write.csv", "glm", "lm"):
             continue
