@@ -201,12 +201,12 @@ def run(module_path: Path, attempt: int, run_id: str) -> ParityCertificate:
         need()
         m = both("dev", "holdout")
         share = float(((m.grade_g == m.grade_p) & (m.decision_g == m.decision_p)).mean())
-        return share == 1.0, share, {"rows": len(m)}
+        return share >= 1.0, share, {"rows": len(m)}
 
     def l5():
         need()
         share = float((~_wrong(st["edge"], tol["pd_abs"])).mean())
-        return share == 1.0, share, {"rows": len(st["edge"])}
+        return share >= 1.0, share, {"rows": len(st["edge"])}
 
     level("L1", "Spec: bins and WoE tables", "max_abs_woe_diff", tol["coef_load_abs"], l1)
     level("L2", "Parameters: golden coefficients load, refit matches R", "max_abs_coef_refit_diff", tol["coef_refit_abs"], l2)
