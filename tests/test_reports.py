@@ -23,8 +23,10 @@ def test_artifact_reports_escape_sources_and_show_review(monkeypatch, tmp_path):
     _save(folder / "facts.json", {"evidence": [{"id": "E1", "path": "model.R", "line_start": 1,
           "line_end": 2, "excerpt": "<unsafe>", "sha256": "abc"}]})
     doc = render.documentation("CR-PD-002").read_text()
-    assert "&lt;script&gt;" in doc and "<script>" not in doc
-    assert "model.R:1" in doc and "&lt;unsafe&gt;" in doc
+    assert "&lt;script&gt;" in doc
+    assert "<script>" not in doc
+    assert "model.R:1" in doc
+    assert "&lt;unsafe&gt;" in doc
     certificate = {"overall": "PASS", "run_id": "synthetic", "attempt": 1, "created_at": "2026-11-13",
                    "levels": [], "hashes": {}, "versions": {}, "mismatch_summary": {}}
     _save(folder / "parity_certificate.json", certificate)
@@ -39,7 +41,8 @@ def test_artifact_reports_escape_sources_and_show_review(monkeypatch, tmp_path):
     audit.write_text(json.dumps({"model_id": "CR-PD-002", "actor": "tester", "ts": "2026-11-13",
                                 "payload": {"gate": "validation", "decision": "approve", "auto": True}}))
     html = render.validation("CR-PD-002").read_text()
-    assert "auto (demo flag)" in html and "Unavailable" in html
+    assert "auto (demo flag)" in html
+    assert "Unavailable" in html
     assert "data:image/png;base64," in html
     _save(tmp_path / "inventory" / "inventory.json", [{"model_id": "CR-PD-002", "name": "Fixture",
           "risk_tier": 1, "status": "validated", "documentation_status": "current",

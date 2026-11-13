@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+MISSING_LABEL = "<missing>"
+
 
 def _inputs(y, p):
     y, p = np.asarray(y, dtype=float), np.asarray(p, dtype=float)
@@ -87,7 +89,7 @@ def hosmer_lemeshow(y, p, groups=10) -> tuple[float, float]:
 
 def jeffreys_by_grade(df, grade="grade", pd_col="pd", y="DEFAULT", alpha=0.05) -> pd.DataFrame:
     _inputs(df[y], df[pd_col])
-    if not 0 < alpha < 1:
+    if not np.isfinite(alpha) or alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be between zero and one")
     table = df.groupby(grade, observed=True, dropna=False).agg(
         N=(y, "size"), D=(y, "sum"), mean_pd=(pd_col, "mean")
@@ -118,7 +120,7 @@ def psi(expected, actual, bins=10) -> float:
             e = np.r_[np.histogram(ref.dropna(), edges)[0], ref.isna().sum()]
             a = np.r_[np.histogram(cur.dropna(), edges)[0], cur.isna().sum()]
     else:
-        ref, cur = expected.astype("string").fillna("<missing>"), actual.astype("string").fillna("<missing>")
+        ref, cur = expected.astype("string").fillna(MISSING_LABEL), actual.astype("string").fillna(MISSING_LABEL)
         categories = pd.Index(ref.unique()).union(pd.Index(cur.unique()))
         e = ref.value_counts().reindex(categories, fill_value=0).to_numpy()
         a = cur.value_counts().reindex(categories, fill_value=0).to_numpy()
@@ -132,7 +134,7 @@ def csi(ref: pd.DataFrame, cur: pd.DataFrame, cols) -> dict[str, float]:
 
 
 def woe_iv(binned: pd.Series, y: pd.Series) -> tuple[pd.DataFrame, float]:
-    labels = pd.Series(binned).astype("string").fillna("<missing>").to_numpy()
+    labels = pd.Series(binned).astype("string").fillna(MISSING_LABEL).to_numpy()
     target = np.asarray(y)
     if len(labels) != len(target) or not len(labels) or not np.isin(target, [0, 1]).all():
         raise ValueError("Bins and binary labels must have the same nonzero length")

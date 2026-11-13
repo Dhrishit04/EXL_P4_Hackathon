@@ -10,7 +10,9 @@ def test_approval_semantics_and_group_auc():
     result = report(data, "DEFAULT", "approved", "pd", ["SEX"])
     assert result["worst_dp_ratio"] == 1
     assert result["worst_eod"] == 0
-    assert all(row["auc"] == 1 and row["tpr"] == 1 and row["fpr"] == 0 for row in result["by_group"])
+    assert all(row["auc"] == 1 for row in result["by_group"])
+    assert all(row["tpr"] == 1 for row in result["by_group"])
+    assert all(row["fpr"] == 0 for row in result["by_group"])
 
 
 def test_undefined_rates_are_explicit():

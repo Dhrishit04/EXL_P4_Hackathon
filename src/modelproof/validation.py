@@ -29,15 +29,23 @@ def scored_rows(frame: pd.DataFrame, score_fn: Callable) -> pd.DataFrame:
     if scores.decision.isna().any() or scores.grade.isna().any():
         raise ValueError("Scoring decisions and grades violate the contract")
     raw = frame.drop(columns=list((required - {"ID"}) & set(frame)))
-    return raw.merge(scores, on="ID", validate="one_to_one", sort=False)
+    return raw.merge(scores, on="ID", how="inner", validate="one_to_one", sort=False)
 
 
 def _rag(value: float, thresholds: dict, higher: bool = False) -> str:
     if value is None or not np.isfinite(value):
         return "amber"
     if higher:
-        return "green" if value >= thresholds["green"] else "amber" if value >= thresholds["amber"] else "red"
-    return "green" if value < thresholds["green"] else "amber" if value < thresholds["amber"] else "red"
+        if value >= thresholds["green"]:
+            return "green"
+        if value >= thresholds["amber"]:
+            return "amber"
+        return "red"
+    if value < thresholds["green"]:
+        return "green"
+    if value < thresholds["amber"]:
+        return "amber"
+    return "red"
 
 
 def _records(frame: pd.DataFrame) -> list[dict]:
@@ -58,17 +66,7 @@ def rating(tests: list[CheckResult]) -> str:
 def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, features: list[str]) -> ValidationResults:
     """Score independent splits, compute metrics, persist evidence and audit event."""
     policy = config.load_policy()
-    if set(dev.ID) & set(holdout.ID):
-        raise ValueError("Development and holdout IDs overlap")
-    if not features or len(set(features)) != len(features):
-        raise ValueError("Provide unique raw feature names")
-    if {"ID", "DEFAULT", "pd", "score", "grade", "decision"} & set(features):
-        raise ValueError("Identifiers, targets and scoring outputs cannot be benchmark features")
-    for frame in (dev, holdout):
-        if not set(features).issubset(frame):
-            raise ValueError("Missing requested raw features")
-        if not frame.DEFAULT.isin([0, 1]).all() or frame.DEFAULT.nunique() != 2:
-            raise ValueError("Each validation split needs both binary outcome classes")
+    _check_inputs(dev, holdout, features)
     d, h = scored_rows(dev, score_fn), scored_rows(holdout, score_fn)
     h["AGE_BAND"] = data.age_band(h.AGE)
     tests: list[CheckResult] = []
@@ -81,6 +79,38 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
                                  ss123_principle="P3" if area in {"conceptual", "data_quality", "implementation"} else "P4",
                                  details=details or {}))
 
+    gh = _discrimination_checks(d, h, policy, add)
+    _calibration_checks(h, policy, add, tables)
+    _stability_checks(dev, holdout, d, h, features, policy, add, tables)
+    _iv_checks(dev, features, policy, add, tables)
+    _vif_checks(dev, h, features, policy, add, tests)
+    _benchmark_checks(dev, holdout, features, gh, policy, add)
+    _sensitivity_checks(holdout, h, score_fn, policy, add)
+    _fairness_checks(h, policy, add, tables)
+    _data_quality_checks(holdout, policy, add)
+    out = _implementation_checks(model_id, add)
+    charts = _charts_checks(d, h, tables)
+    result = ValidationResults(model_id=model_id, tests=tests, tables=tables, charts=charts)
+    (out / "validation_results.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
+    audit.append("validation_suite_run", {"tests": len(tests), "rating": rating(tests), "artifact": str(out / "validation_results.json")}, model_id=model_id)
+    return result
+
+
+def _check_inputs(dev, holdout, features):
+    if set(dev.ID) & set(holdout.ID):
+        raise ValueError("Development and holdout IDs overlap")
+    if not features or len(set(features)) != len(features):
+        raise ValueError("Provide unique raw feature names")
+    if {"ID", "DEFAULT", "pd", "score", "grade", "decision"} & set(features):
+        raise ValueError("Identifiers, targets and scoring outputs cannot be benchmark features")
+    for frame in (dev, holdout):
+        if not set(features).issubset(frame):
+            raise ValueError("Missing requested raw features")
+        if not frame.DEFAULT.isin([0, 1]).all() or frame.DEFAULT.nunique() != 2:
+            raise ValueError("Each validation split needs both binary outcome classes")
+
+
+def _discrimination_checks(d, h, policy, add):
     gd, gh = metrics.gini(d.DEFAULT, d["pd"]), metrics.gini(h.DEFAULT, h["pd"])
     for split, frame, value in (("dev", d, gd), ("holdout", h, gh)):
         add(f"gini_{split}", "discrimination", value, _rag(value, policy["gini"], True),
@@ -89,6 +119,10 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
     add("ks_holdout", "discrimination", metrics.ks(h.DEFAULT, h["pd"]))
     drop = (gd - gh) / gd if gd > 0 else np.nan
     add("gini_drop_rel", "discrimination", drop, _rag(drop, policy["gini_drop_rel"]), str(policy["gini_drop_rel"]))
+    return gh
+
+
+def _calibration_checks(h, policy, add, tables):
     stat, pvalue = metrics.hosmer_lemeshow(h.DEFAULT, h["pd"])
     add("hosmer_lemeshow_p", "calibration", pvalue,
         "green" if pvalue >= policy["hosmer_lemeshow_p"]["green"] else "red",
@@ -98,15 +132,25 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
     jeff = metrics.jeffreys_by_grade(h, alpha=policy["jeffreys"]["alpha"])
     failures = int(jeff["fail"].sum())
     jp = policy["jeffreys"]
-    add("jeffreys_failures", "calibration", failures,
-        "red" if failures >= jp["red_failures"] else "amber" if failures >= jp["amber_failures"] else "green", str(jp))
+    jeffreys_rag = "green"
+    if failures >= jp["red_failures"]:
+        jeffreys_rag = "red"
+    elif failures >= jp["amber_failures"]:
+        jeffreys_rag = "amber"
+    add("jeffreys_failures", "calibration", failures, jeffreys_rag, str(jp))
     tables["jeffreys"] = _records(jeff)
+
+
+def _stability_checks(dev, holdout, d, h, features, policy, add, tables):
     sp = metrics.psi(d.score, h.score)
     add("score_psi", "stability", sp, _rag(sp, policy["psi"]), str(policy["psi"]))
     cs = metrics.csi(dev, holdout, features)
     tables["csi"] = [{"feature": key, "csi": value} for key, value in cs.items()]
     for key, value in cs.items():
         add(f"csi_{key}", "stability", value, _rag(value, policy["csi"]), str(policy["csi"]))
+
+
+def _iv_checks(dev, features, policy, add, tables):
     iv_rows = []
     for feature in features:
         series = dev[feature]
@@ -115,6 +159,9 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
         iv_rows.append({"feature": feature, "iv": iv})
         add(f"iv_{feature}", "conceptual", iv, "amber" if iv < policy["iv_useless"] else "green", f">= {policy['iv_useless']}")
     tables["iv"] = iv_rows
+
+
+def _vif_checks(dev, h, features, policy, add, tests):
     numeric = dev[features].select_dtypes(include="number")
     vif_values = metrics.vif(numeric) if len(numeric.columns) and not numeric.isna().any().any() else {}
     if not vif_values:
@@ -124,12 +171,19 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
         if np.isinf(value):
             tests[-1].rag = "red"
     add("grade_hhi", "conceptual", metrics.hhi(h.grade))
+
+
+def _benchmark_checks(dev, holdout, features, gh, policy, add):
+    numeric = dev[features].select_dtypes(include="number")
     if len(numeric.columns) != len(features):
         add("challenger_gini_gap", "benchmark", None, details={"reason": "Challenger requires numeric raw features"})
     else:
-        challenger = HistGradientBoostingClassifier(random_state=42, max_iter=100).fit(dev[features], dev.DEFAULT)
+        challenger = HistGradientBoostingClassifier(random_state=42, max_iter=100, learning_rate=0.1).fit(dev[features], dev.DEFAULT)
         gap = metrics.gini(holdout.DEFAULT, challenger.predict_proba(holdout[features])[:, 1]) - gh
         add("challenger_gini_gap", "benchmark", gap, _rag(gap, policy["benchmark_gini_gap"]), str(policy["benchmark_gini_gap"]))
+
+
+def _sensitivity_checks(holdout, h, score_fn, policy, add):
     for feature in ("BILL_AMT1", "LIMIT_BAL"):
         for factor in (0.9, 1.1):
             shock = holdout.copy()
@@ -138,6 +192,9 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
             shift = float(np.abs(shifted.to_numpy() - h.score.to_numpy()).mean())
             add(f"sensitivity_{feature}_{factor}", "sensitivity", shift,
                 _rag(shift, policy["sensitivity_mean_shift"]), str(policy["sensitivity_mean_shift"]))
+
+
+def _fairness_checks(h, policy, add, tables):
     h["approved"] = h.decision.eq("approve").astype(int)
     fair = fairness.report(h, "DEFAULT", "approved", "pd", list(data.PROTECTED))
     tables["fairness"] = fair["groups"]
@@ -146,18 +203,28 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
         thresholds = {level: policy["fairness"][f"{prefix}_{level}"] for level in ("green", "amber")}
         add(key, "fairness", value, _rag(value, thresholds, higher), str(thresholds),
             {"note": "Approval is the positive decision; DEFAULT=1 denotes default. Rates require contextual interpretation."})
+
+
+def _data_quality_checks(holdout, policy, add):
     for column in holdout:
         value = float(holdout[column].isna().mean())
         add(f"missing_{column}", "data_quality", value, _rag(value, policy["missing_rate"]), str(policy["missing_rate"]))
     for column, valid in (("AGE", holdout.AGE.between(21, 79)), ("SEX", holdout.SEX.isin([1, 2]))):
         count = int((~valid).sum())
         add(f"range_{column}", "data_quality", count, "red" if count else "green", "No out-of-range values", {"range": "21..79" if column == "AGE" else "{1,2}"})
+
+
+def _implementation_checks(model_id, add):
     out = config.artifact_dir(model_id)
     cert_path = out / "parity_certificate.json"
     status = json.loads(cert_path.read_text(encoding="utf-8"))["overall"] if cert_path.exists() else "missing"
     if status not in {"PASS", "FAIL", "missing"}:
         raise ValueError("Invalid parity certificate status")
     add("parity", "implementation", float(status == "PASS"), {"PASS": "green", "FAIL": "red", "missing": "amber"}[status], "Certificate overall PASS", {"status": status})
+    return out
+
+
+def _charts_checks(d, h, tables):
     fpr, tpr, _ = roc_curve(h.DEFAULT, h["pd"])
     order = h.groupby("pd").DEFAULT.agg(["count", "sum"])
     good = (order["count"] - order["sum"]).cumsum() / h.DEFAULT.eq(0).sum()
@@ -165,11 +232,9 @@ def run_suite(model_id, dev: pd.DataFrame, holdout: pd.DataFrame, score_fn, feat
     edges = np.histogram_bin_edges(np.concatenate([d.score.to_numpy(), h.score.to_numpy()]), bins=20)
     counts_d, _ = np.histogram(d.score, bins=edges)
     counts_h, _ = np.histogram(h.score, bins=edges)
-    charts = {"roc": {"fpr": fpr.tolist(), "tpr": tpr.tolist()},
+    return {"roc": {"fpr": fpr.tolist(), "tpr": tpr.tolist()},
               "ks": {"score": order.index.tolist(), "good_cdf": good.tolist(), "bad_cdf": bad.tolist()},
               "score_distribution": {"edges": edges.tolist(), "dev": counts_d.tolist(), "holdout": counts_h.tolist()},
               "calibration": {"records": tables["calibration"]}}
-    result = ValidationResults(model_id=model_id, tests=tests, tables=tables, charts=charts)
-    (out / "validation_results.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
-    audit.append("validation_suite_run", {"tests": len(tests), "rating": rating(tests), "artifact": str(out / "validation_results.json")}, model_id=model_id)
-    return result
+
+
