@@ -1,6 +1,6 @@
 .env
 .venv/
-data/raw/
+**/data/raw/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -16,7 +16,7 @@ REDACTED
 AGENTS.md
 .REDACTED/
 .codex/
-.github/copilot-instructions.md
+**/.github/copilot-instructions.md
 team/
-docs/SPEC.md
-docs/AI_TOOLS.md
+**/docs/SPEC.md
+**/docs/AI_TOOLS.md
