@@ -24,3 +24,8 @@ MLflow is optional. The missing-library path is silent. Live tracking/registry n
 ## Remaining team deliverables
 
 The real-data run, integration merge and Part D slides need the other contributors' modules and artifacts/metrics.json. Do not invent cost, benchmark numbers, screenshots or a passing real model result. No submission email or deployment is performed by WP3.
+
+## Verified checks
+
+All 57 tests passed on Python 3.12 using scipy 1.15.3, scikit-learn 1.6.1, fairlearn 0.12.0, matplotlib 3.10.3, pandas 2.2.3 and numpy 2.2.6. Ruff and syntax compilation also pass. Tests cover the real WP1 schema/config/audit plus test-only WP2 data stand-ins. Python 3.11 and the team uv.lock environment still need CI confirmation. Live MLflow and the real rebuilt model remain integration checks.
+
