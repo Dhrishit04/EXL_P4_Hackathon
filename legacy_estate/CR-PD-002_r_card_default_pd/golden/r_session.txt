@@ -1,0 +1,45 @@
+R version 4.6.2 (2026-10-29)
+Platform: aarch64-apple-darwin27.0.0
+Running under: macOS Golden Gate 27.2
+
+Matrix products: default
+BLAS:   /opt/homebrew/Cellar/openblas/0.3.34/lib/libopenblasp-r0.3.34.dylib 
+LAPACK: /opt/homebrew/Cellar/r/4.6.2/lib/R/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Europe/Dublin
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.2
+
+Call:
+glm(formula = DEFAULT ~ woe_util + woe_pay_ratio + woe_n_delinq + 
+    woe_worst_status + woe_age + woe_limit, family = binomial, 
+    data = d)
+
+Coefficients:
+                 Estimate Std. Error z value Pr(>|z|)    
+(Intercept)      -1.25873    0.01857 -67.793  < 2e-16 ***
+woe_util         -0.24149    0.07245  -3.333 0.000859 ***
+woe_pay_ratio    -0.03818    0.05245  -0.728 0.466658    
+woe_n_delinq     -0.76400    0.04961 -15.401  < 2e-16 ***
+woe_worst_status -0.19491    0.05147  -3.787 0.000153 ***
+woe_age          -0.14451    0.15479  -0.934 0.350515    
+woe_limit        -0.38392    0.04824  -7.959 1.74e-15 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 22193  on 20999  degrees of freedom
+Residual deviance: 18893  on 20993  degrees of freedom
+AIC: 18907
+
+Number of Fisher Scoring iterations: 4
+

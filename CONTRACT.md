@@ -161,7 +161,7 @@ CLI `modelproof` (typer, WP1): `discover`, `run --model ID [--auto-approve]`, `a
 `.env`: `LLM_PROVIDER` (anthropic | openai | azure_openai | google_genai), `LLM_MODEL`, `LLM_MODE` (auto | live | record | replay), provider keys, `OPENAI_BASE_URL` (OpenAI compatible endpoints), `MLFLOW_TRACKING_URI=sqlite:///mlflow.db`, `RSCRIPT=Rscript`, `MODELPROOF_ARTIFACTS=artifacts`.
 
 ## B10. Clarifications added by WP1 at scaffold time
-* `config.MODELS` values are the repo relative folders exactly as in the B1 table (`legacy_estate/CR-PD-001_sas_application_scorecard`). Use `config.model_dir(model_id) -> Path` (absolute) instead of joining paths yourself.
+* `config.MODELS` values are the folder names inside `config.LEGACY` (`CR-PD-001_sas_application_scorecard`, the B1 table prefixes them with `legacy_estate/`), so `config.LEGACY / config.MODELS[model_id]` and `config.model_dir(model_id) -> Path` (absolute) both give the model folder.
 * Read `config.ARTIFACTS`, `config.CACHE` at call time (`from modelproof import config` then `config.ARTIFACTS`). Do not `from modelproof.config import ARTIFACTS`: tests redirect it with `monkeypatch.setattr(config, "ARTIFACTS", tmp_path)`.
 * `audit.append(...)` entries use `GENESIS = "0" * 64` as the first `prev_hash`.
 * Setup: `uv sync --all-extras`, then `uv run pytest -q`, `uv run ruff check --fix .`, `uv run modelproof --help`.

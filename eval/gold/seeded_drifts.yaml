@@ -1,0 +1,177 @@
+# seeded doc-vs-code drifts. Agents and prompts must never read eval/gold.
+- id: D-001
+  model_id: CR-PD-001
+  field: cutoff
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 22
+  doc_anchor: Applicants scoring 520
+  doc_value: '520'
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 7
+  code_anchor: '%LET CUTOFF = 540'
+  true_value: '540'
+- id: D-002
+  model_id: CR-PD-001
+  field: pdo
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 18
+  doc_anchor: PDO 40
+  doc_value: '40'
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 8
+  code_anchor: '%LET PDO = 20'
+  true_value: '20'
+- id: D-003
+  model_id: CR-PD-001
+  field: personal_status_used
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 15
+  doc_anchor: No demographic or protected
+  doc_value: no demographic variables used
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 35
+  code_anchor: IF personal_status =
+  true_value: personal_status is a predictor
+- id: D-004
+  model_id: CR-PD-001
+  field: property_magnitude_listed
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 14
+  doc_anchor: property magnitude
+  doc_value: property_magnitude is a predictor
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 50
+  code_anchor: MODEL bad =
+  true_value: w_chk w_dur w_hist w_sav w_pstat w_age (no property_magnitude)
+- id: D-005
+  model_id: CR-PD-001
+  field: dev_sample_share
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 10
+  doc_anchor: 80% random split
+  doc_value: 80%
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 14
+  code_anchor: ranuni(12345) < 0.7
+  true_value: 70%
+- id: D-006
+  model_id: CR-PD-001
+  field: rounding
+  doc_file: legacy_estate/CR-PD-001_sas_application_scorecard/MDD_v1.2_2019.md
+  doc_line: 19
+  doc_anchor: ties to even
+  doc_value: ties to even
+  code_file: legacy_estate/CR-PD-001_sas_application_scorecard/app_scorecard.sas
+  code_line: 61
+  code_anchor: score = ROUND(
+  true_value: 'SAS ROUND: half away from zero'
+- id: D-007
+  model_id: CR-PD-002
+  field: cutoff
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 25
+  doc_anchor: scoring 580
+  doc_value: '580'
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 15
+  code_anchor: CUTOFF <- 560
+  true_value: '560'
+- id: D-008
+  model_id: CR-PD-002
+  field: education_listed
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 16
+  doc_anchor: customer education
+  doc_value: EDUCATION is a predictor
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 98
+  code_anchor: glm(DEFAULT ~
+  true_value: formula has no EDUCATION
+- id: D-009
+  model_id: CR-PD-002
+  field: util_omitted
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 16
+  doc_anchor: The model characteristics are
+  doc_value: util not listed
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 98
+  code_anchor: glm(DEFAULT ~
+  true_value: woe_util is in the formula
+- id: D-010
+  model_id: CR-PD-002
+  field: base_odds
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 21
+  doc_anchor: odds of 50:1
+  doc_value: '50:1'
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 14
+  code_anchor: BASE_ODDS <- 25
+  true_value: '25:1'
+- id: D-011
+  model_id: CR-PD-002
+  field: pdo
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 21
+  doc_anchor: PDO 25
+  doc_value: '25'
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 12
+  code_anchor: PDO <- 20
+  true_value: '20'
+- id: D-012
+  model_id: CR-PD-002
+  field: default_definition
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 10
+  doc_anchor: 90 or more days past due
+  doc_value: 90+ days past due within 12 months
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 4
+  code_anchor: target DEFAULT = default payment next month
+  true_value: default payment next month
+- id: D-013
+  model_id: CR-PD-002
+  field: sample_period
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 9
+  doc_anchor: January to June 2004
+  doc_value: Jan-Jun 2004
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 4
+  code_anchor: Apr-Sep 2005 payment history
+  true_value: Apr-Sep 2005
+- id: D-014
+  model_id: CR-PD-002
+  field: rounding
+  doc_file: legacy_estate/CR-PD-002_r_card_default_pd/MDD_v2.0_2021.md
+  doc_line: 22
+  doc_anchor: truncated to whole points
+  doc_value: truncated
+  code_file: legacy_estate/CR-PD-002_r_card_default_pd/pd_model.R
+  code_line: 108
+  code_anchor: score <- round(
+  true_value: 'R round: half to even'
+- id: D-015
+  model_id: PR-RB-004
+  field: base_rate
+  doc_file: legacy_estate/PR-RB-004_sas_risk_based_pricing/pricing_memo.md
+  doc_line: 3
+  doc_anchor: 4.0% base rate
+  doc_value: 4.0%
+  code_file: legacy_estate/PR-RB-004_sas_risk_based_pricing/rbp_pricing.sas
+  code_line: 7
+  code_anchor: '%LET BASE_RATE = 0.045'
+  true_value: 4.5%
+- id: D-016
+  model_id: PR-RB-004
+  field: grade_e_priced
+  doc_file: legacy_estate/PR-RB-004_sas_risk_based_pricing/pricing_memo.md
+  doc_line: 4
+  doc_anchor: Grade E applicants are declined
+  doc_value: grade E not priced
+  code_file: legacy_estate/PR-RB-004_sas_risk_based_pricing/rbp_pricing.sas
+  code_line: 15
+  code_anchor: ELSE spread = 0.100
+  true_value: grade E priced at 10% spread
