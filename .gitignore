@@ -11,11 +11,7 @@ mlruns/
 *.egg-info/
 # NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
 
-# assistant/tool files and prompts stay out of the repo
-REDACTED
-AGENTS.md
-.REDACTED/
-.codex/
-.github/copilot-instructions.md
+# local prompts and notes stay out of the repo
 team/
 docs/SPEC.md
+docs/AI_TOOLS.md

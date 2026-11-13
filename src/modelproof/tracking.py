@@ -9,6 +9,69 @@ from pathlib import Path
 from modelproof import config
 
 
+def _read_optional(path):
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def _tags(root, model_id, report, certificate):
+    inventory_path = root / "inventory" / "inventory.json"
+    tier = "unknown"
+    if inventory_path.exists():
+        records = json.loads(inventory_path.read_text())
+        tier = next((str(row["risk_tier"]) for row in records if row["model_id"] == model_id), tier)
+    return {"model_id": model_id, "tier": tier,
+            "parity_status": certificate.get("overall", "missing"),
+            "rating": report.get("rating", "unavailable")}
+
+
+def _log_metrics(mlflow, results):
+    for index, test in enumerate(results.get("tests", [])):
+        value = test.get("value")
+        if isinstance(value, (int, float)) and math.isfinite(value):
+            mlflow.log_metric(f"check_{index}", value)
+
+
+def _log_coefficients(mlflow, model_id):
+    if model_id != "CR-PD-002":
+        return
+    path = Path(config.LEGACY) / "CR-PD-002_r_card_default_pd" / "golden" / "coefficients.csv"
+    if path.exists():
+        import pandas as pd
+
+        for row in pd.read_csv(path).itertuples(index=False):
+            mlflow.log_param(f"coef.{row.term}", row.estimate)
+
+
+def _log_artifacts(mlflow, folder):
+    for name in ["validation_results.json", "validation_report.json", "validation_report.html",
+                 "parity_certificate.json", "parity_certificate.html", "monitoring.json"]:
+        path = folder / name
+        if path.exists():
+            mlflow.log_artifact(str(path))
+
+
+def _register_verified_model(mlflow, model_id, certificate, tags):
+    if model_id != "CR-PD-002" or certificate.get("overall") != "PASS":
+        return
+    module_path = Path(config.REBUILT) / "cr_pd_002.py"
+    if not module_path.exists():
+        return
+    from modelproof.parity import score_fn
+
+    # Serialize the verified scorer so its coefficients and tables travel with the model.
+    scorer = score_fn(module_path)
+
+    class VerifiedModel(mlflow.pyfunc.PythonModel):
+        def predict(self, context, model_input, params=None):
+            return scorer(model_input)
+
+    info = mlflow.pyfunc.log_model(artifact_path="model", python_model=VerifiedModel())
+    version = mlflow.register_model(info.model_uri, "CR-PD-002-python")
+    client = mlflow.MlflowClient()
+    for key, value in tags.items():
+        client.set_model_version_tag("CR-PD-002-python", version.version, key, str(value))
+
+
 def log(model_id) -> None:
     """Azure ML works by pointing MLFLOW_TRACKING_URI at the workspace and installing azureml-mlflow."""
     try:
@@ -25,53 +88,13 @@ def log(model_id) -> None:
     if uri:
         mlflow.set_tracking_uri(uri)
     mlflow.set_experiment("ModelProof")
-    report_path = folder / "validation_report.json"
-    results_path = folder / "validation_results.json"
-    cert_path = folder / "parity_certificate.json"
-    report = json.loads(report_path.read_text()) if report_path.exists() else {}
-    cert = json.loads(cert_path.read_text()) if cert_path.exists() else {}
-    results = report.get("results", {})
-    if not results and results_path.exists():
-        results = json.loads(results_path.read_text())
-    tier = "unknown"
-    inventory_path = root / "inventory" / "inventory.json"
-    if inventory_path.exists():
-        records = json.loads(inventory_path.read_text())
-        tier = next((str(row["risk_tier"]) for row in records if row["model_id"] == model_id), tier)
-    tags = {"model_id": model_id, "tier": tier, "parity_status": cert.get("overall", "missing"),
-            "rating": report.get("rating", "unavailable")}
+    report = _read_optional(folder / "validation_report.json")
+    certificate = _read_optional(folder / "parity_certificate.json")
+    results = report.get("results") or _read_optional(folder / "validation_results.json")
+    tags = _tags(root, model_id, report, certificate)
     with mlflow.start_run(run_name=model_id):
         mlflow.set_tags(tags)
-        for index, test in enumerate(results.get("tests", [])):
-            value = test.get("value")
-            if isinstance(value, (int, float)) and math.isfinite(value):
-                mlflow.log_metric(f"check_{index}", value)
-        if model_id == "CR-PD-002":
-            coefficient_path = Path(config.LEGACY) / "CR-PD-002_r_card_default_pd" / "golden" / "coefficients.csv"
-            if coefficient_path.exists():
-                import pandas as pd
-
-                for row in pd.read_csv(coefficient_path).itertuples(index=False):
-                    mlflow.log_param(f"coef.{row.term}", row.estimate)
-        for name in ["validation_results.json", "validation_report.json", "validation_report.html",
-                     "parity_certificate.json", "parity_certificate.html", "monitoring.json"]:
-            path = folder / name
-            if path.exists():
-                mlflow.log_artifact(str(path))
-        if model_id == "CR-PD-002" and cert.get("overall") == "PASS":
-            module_path = Path(config.REBUILT) / "cr_pd_002.py"
-            if module_path.exists():
-                from modelproof.parity import score_fn
-
-                # Serialize the verified scorer so its coefficients and tables travel with the model.
-                scorer = score_fn(module_path)
-
-                class VerifiedModel(mlflow.pyfunc.PythonModel):
-                    def predict(self, context, model_input, params=None):
-                        return scorer(model_input)
-
-                info = mlflow.pyfunc.log_model(artifact_path="model", python_model=VerifiedModel())
-                version = mlflow.register_model(info.model_uri, "CR-PD-002-python")
-                client = mlflow.MlflowClient()
-                for key, value in tags.items():
-                    client.set_model_version_tag("CR-PD-002-python", version.version, key, str(value))
+        _log_metrics(mlflow, results)
+        _log_coefficients(mlflow, model_id)
+        _log_artifacts(mlflow, folder)
+        _register_verified_model(mlflow, model_id, certificate, tags)
