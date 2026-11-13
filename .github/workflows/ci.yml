@@ -7,13 +7,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ModelProof_Harshit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - run: uv sync --all-extras --locked --no-build
+      - run: uv sync --all-extras --locked --no-build --no-install-project
       - run: .venv/bin/ruff check .
       - run: .venv/bin/pytest -q
         env:
