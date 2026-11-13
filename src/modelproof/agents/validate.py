@@ -162,9 +162,12 @@ def run(model_id: str = "CR-PD-002", reviewer_comment: str = "") -> ValidationRe
         from modelproof.report import render
 
         render.validation(model_id)
-    except ImportError as e:  # WP3 renderer not available: the JSON report is still complete
+    except Exception as e:  # renderer missing or failing: the JSON report is still complete
         audit.append(
-            "validate.render_skipped", {"reason": str(e)}, model_id=model_id, actor="agent:validate"
+            "validate.render_skipped",
+            {"reason": f"{type(e).__name__}: {e}"[:300]},
+            model_id=model_id,
+            actor="agent:validate",
         )
     audit.append(
         "validate.completed",
