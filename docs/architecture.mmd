@@ -1,0 +1,29 @@
+flowchart LR
+  Estate[Legacy estate] --> Discover[Discover]
+  Data[Processed data] --> Validate[Validate]
+  Discover --> G1{Human gate}
+  G1 --> Document[Document]
+  Document --> G2{Human gate}
+  G2 --> Redevelop[Redevelop]
+  Redevelop --> G3{Human gate}
+  G3 --> Validate
+  Validate --> G4{Human gate}
+  G4 --> Monitor[Monitor]
+  Monitor --> G5{Human gate}
+  G5 -->|revalidation| Validate
+  LLM[LLM: proposes; sees code and aggregates, never rows] -.-> Discover
+  LLM -.-> Document
+  LLM -.-> Redevelop
+  Engines[Deterministic engines: extractors, injection scanner, tier matrix, claim verifier, sandbox, parity harness, metrics, fairness, policy] --> Discover
+  Engines --> Document
+  Engines --> Redevelop
+  Engines --> Validate
+  Engines --> Monitor
+  Discover --> Artifacts[Artifacts]
+  Document --> Audit[Hash chained audit log]
+  Redevelop --> Audit
+  Validate --> Audit
+  Monitor --> Audit
+  Validate --> MLflow[MLflow]
+  Artifacts --> Workbench[Streamlit validator workbench]
+  Audit --> Workbench

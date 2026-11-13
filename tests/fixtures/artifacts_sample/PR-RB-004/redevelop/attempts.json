@@ -1,0 +1,23 @@
+[
+  {
+    "attempt": 1,
+    "overall": "FAIL",
+    "passed_levels": [
+      "L1",
+      "L2"
+    ],
+    "localiser_summary": "FIXTURE localiser summary: synthetic coefficient mismatch."
+  },
+  {
+    "attempt": 2,
+    "overall": "PASS",
+    "passed_levels": [
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5"
+    ],
+    "localiser_summary": "FIXTURE localiser summary: synthetic retry passed."
+  }
+]

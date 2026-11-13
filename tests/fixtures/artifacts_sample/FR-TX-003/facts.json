@@ -1,0 +1,47 @@
+{
+  "model_id": "FR-TX-003",
+  "language": "Python",
+  "files": [
+    {
+      "path": "FIXTURE/example.txt",
+      "sha256": "FIXTURE-hash",
+      "n_lines": 3,
+      "kind": "code"
+    }
+  ],
+  "datasets_read": [
+    "FIXTURE synthetic dataset"
+  ],
+  "datasets_written": [],
+  "variables_created": [
+    "FIXTURE_FEATURE"
+  ],
+  "variables_used": [
+    "FIXTURE_TARGET"
+  ],
+  "dead_variables": [],
+  "model_calls": [],
+  "target": "FIXTURE_TARGET",
+  "parameters": {},
+  "dependencies": [],
+  "evidence": [
+    {
+      "id": "FIXTURE-CODE-1",
+      "kind": "code",
+      "path": "FIXTURE/example.txt",
+      "line_start": 1,
+      "line_end": 2,
+      "excerpt": "FIXTURE synthetic example source",
+      "sha256": "FIXTURE-hash"
+    },
+    {
+      "id": "FIXTURE-DOC-1",
+      "kind": "doc",
+      "path": "FIXTURE/model_documentation.txt",
+      "line_start": 4,
+      "line_end": 4,
+      "excerpt": "FIXTURE synthetic documented value",
+      "sha256": "FIXTURE-doc-hash"
+    }
+  ]
+}
