@@ -4,6 +4,7 @@ import importlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 
 from modelproof import config
@@ -31,6 +32,11 @@ def _log_metrics(mlflow, results):
             mlflow.log_metric(f"check_{index}", value)
 
 
+def _safe_key(key):
+    """MLflow keys allow letters, digits, _ - . space : / only; R names such as (Intercept) need cleaning."""
+    return re.sub(r"[^\w\-. :/]", "", key)
+
+
 def _log_coefficients(mlflow, model_id):
     if model_id != "CR-PD-002":
         return
@@ -39,7 +45,7 @@ def _log_coefficients(mlflow, model_id):
         import pandas as pd
 
         for row in pd.read_csv(path).itertuples(index=False):
-            mlflow.log_param(f"coef.{row.term}", row.estimate)
+            mlflow.log_param(_safe_key(f"coef.{row.term}"), row.estimate)
 
 
 def _log_artifacts(mlflow, folder):
