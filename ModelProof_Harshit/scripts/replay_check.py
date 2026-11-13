@@ -39,7 +39,7 @@ def _canon(p: Path) -> bytes | str:
 
 def _files(root: Path) -> dict[str, Path]:
     return {
-        str(p.relative_to(root)): p
+        p.relative_to(root).as_posix(): p
         for p in sorted(root.rglob("*"))
         if p.is_file()
         and not SKIP_PARTS & set(p.relative_to(root).parts)
@@ -62,3 +62,4 @@ if __name__ == "__main__":
     diffs = compare(a, b)
     print("\n".join(diffs) if diffs else f"identical: {len(_files(a))} files compared")
     sys.exit(1 if diffs else 0)
+
