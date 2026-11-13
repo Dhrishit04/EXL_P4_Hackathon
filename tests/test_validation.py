@@ -3,10 +3,10 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-from modelproof.schemas import CheckResult, ValidationResults
 from scipy.special import expit
 
 from modelproof import config
+from modelproof.schemas import CheckResult, ValidationResults
 from modelproof.validation import _rag, rating, run_suite, scored_rows
 
 

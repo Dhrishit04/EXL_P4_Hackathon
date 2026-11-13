@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
-from modelproof.schemas import MonitoringResult
 from test_validation import sample_rows, scorer
 
 from modelproof import config
 from modelproof.monitoring import simulate
+from modelproof.schemas import MonitoringResult
 
 
 def test_monitoring_reproducible_and_saved():

@@ -5,11 +5,11 @@ from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from modelproof.schemas import CheckResult, ValidationResults
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.metrics import roc_curve
 
 from modelproof import audit, config, data, fairness, metrics
+from modelproof.schemas import CheckResult, ValidationResults
 
 
 def scored_rows(frame: pd.DataFrame, score_fn: Callable) -> pd.DataFrame:
