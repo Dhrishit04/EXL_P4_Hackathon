@@ -1,6 +1,6 @@
 .env
 .venv/
-**/data/raw/
+data/raw/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -11,12 +11,6 @@ mlruns/
 *.egg-info/
 # NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
 
-# Local development instructions and build prompts
-CLAUDE.md
-AGENTS.md
-.claude/
-.codex/
-**/.github/copilot-instructions.md
+# local prompts and notes stay out of the repo
 team/
-**/docs/SPEC.md
-**/docs/AI_TOOLS.md
+docs/SPEC.md
