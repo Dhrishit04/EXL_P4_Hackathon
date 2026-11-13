@@ -1,0 +1,12 @@
+.env
+.venv/
+data/raw/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+mlflow.db
+mlruns/
+.DS_Store
+*.egg-info/
+# NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
