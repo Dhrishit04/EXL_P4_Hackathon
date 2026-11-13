@@ -12,9 +12,9 @@ mlruns/
 # NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
 
 # Local development instructions and build prompts
-REDACTED
+CLAUDE.md
 AGENTS.md
-.REDACTED/
+.claude/
 .codex/
 **/.github/copilot-instructions.md
 team/
