@@ -205,3 +205,29 @@ def test_structured_rejects_row_data_before_any_call(env, monkeypatch):
     with pytest.raises(llm.RowDataError):
         llm.structured("s", "\n".join("1,2,3" for _ in range(25)), Out, "t")
     assert chat.calls == 0
+
+
+def test_replay_works_offline_without_provider_or_model_in_env(env, monkeypatch):
+    chat = install(monkeypatch, ok("recorded"))
+    llm.structured("s", "u", Out, "t")  # recorded under test-model
+    for k in ("LLM_PROVIDER", "LLM_MODEL"):
+        monkeypatch.delenv(k)
+    monkeypatch.setenv("LLM_MODE", "replay")
+    assert llm.structured("s", "u", Out, "t").answer == "recorded" and chat.calls == 1
+    last = usage_lines(env)[-1]
+    assert (
+        last["cache_hit"] and last["model"] == "test-model" and last["provider"] == "anthropic"
+    )  # as recorded
+    with pytest.raises(llm.ReplayMiss):  # a different prompt is still a miss
+        llm.structured("s", "other", Out, "t")
+
+
+def test_live_call_without_model_id_fails_clearly(env, monkeypatch):
+    monkeypatch.delenv("LLM_MODEL")
+    monkeypatch.undo()  # drop the fake chat; use the real _chat guard
+    monkeypatch.setattr(config, "ARTIFACTS", env / "artifacts")
+    monkeypatch.setattr(config, "CACHE", env / "cache")
+    monkeypatch.setenv("LLM_MODE", "live")
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    with pytest.raises(RuntimeError, match="LLM_MODEL is not set"):
+        llm.text("s", "u", "t")
