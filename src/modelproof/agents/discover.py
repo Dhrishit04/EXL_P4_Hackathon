@@ -4,6 +4,7 @@ Deterministic (never LLM): risk tier, next due date, language, files, datasets, 
 status, up/downstream models, and the verification of every doc vs code drift candidate."""
 
 import json
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
@@ -13,6 +14,12 @@ from modelproof.schemas import Drift, Evidence, Facts, Feature, InventoryRecord
 
 MAX_EXCERPT = 700  # chars of each evidence excerpt sent to the LLM
 MAX_EVIDENCE = 150  # evidence items sent to the LLM
+DOC_SUFFIXES = {
+    ".md",
+    ".rst",
+    ".docx",
+    ".pdf",
+}  # formal documents; loose .txt notes are not documentation
 
 
 class _Candidate(BaseModel):
@@ -112,7 +119,10 @@ def run(model_id: str, reviewer_comment: str = "") -> InventoryRecord:
     old = inventory.get(model_id)
     tier = tiering.assign(sem.materiality, sem.complexity)
     last_validated = old.last_validated if old else None
-    has_doc = any(f.get("kind") == "doc" for f in facts.files)
+    has_doc = any(
+        f.get("kind") == "doc" and Path(f["path"]).suffix.lower() in DOC_SUFFIXES
+        for f in facts.files
+    )
     downstream = []
     for other in config.MODELS:
         if other == model_id:
