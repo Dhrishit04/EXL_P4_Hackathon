@@ -1,0 +1,6 @@
+{% extends "base.html.j2" %}{% block content %}
+<p class="badge">Grounding score {{ doc.grounding_score }}</p><p>Generated {{ doc.generated_at }}</p>
+{% for section, claims in doc.claims|groupby('section') %}<h2>{{ section }}</h2>{% for claim in claims %}<article class="{{ claim.status }}"><p>{{ claim.text }} <strong>[{{ claim.status }}]</strong></p><p>{{ claim.reason }}</p>{% for id in claim.evidence_ids %}<p><a href="#e-{{ id }}">[{{ id }}]</a></p>{% endfor %}</article>{% endfor %}{% endfor %}
+<h2>Document and code drift</h2><table><tr><th>Field</th><th>Documentation</th><th>Code</th><th>Evidence</th><th>Verified</th></tr>{% for row in doc.drifts %}<tr><td>{{ row.field }}</td><td>{{ row.doc_value }}</td><td>{{ row.code_value }}</td><td>{{ row.doc_evidence_id }} / {{ row.code_evidence_id }}</td><td>{{ row.verified }}</td></tr>{% endfor %}</table>
+<h2>Evidence</h2>{% for id, item in evidence.items() %}<article id="e-{{ id }}"><p>[{{ id }}] {{ item.path }}:{{ item.line_start }}–{{ item.line_end }}</p><pre>{{ item.excerpt }}</pre><small>SHA256 {{ item.sha256 }}</small></article>{% endfor %}
+{% endblock %}

@@ -1,0 +1,20 @@
+seed: 42
+psi: {green: 0.10, amber: 0.25}            # < green stable; < amber investigate; else red (Lewis/Siddiqi)
+csi: {green: 0.10, amber: 0.25}
+gini: {green: 0.40, amber: 0.30}           # >= green, >= amber, else red (team policy)
+gini_drop_rel: {green: 0.05, amber: 0.10}  # dev to holdout relative drop
+hosmer_lemeshow_p: {green: 0.05}
+jeffreys: {alpha: 0.05, amber_failures: 1, red_failures: 2}   # ECB style one sided test per grade
+fairness: {dp_ratio_green: 0.80, dp_ratio_amber: 0.70, eod_green: 0.10, eod_amber: 0.20}   # four fifths rule
+vif: {green: 5, amber: 10}
+iv_useless: 0.02
+benchmark_gini_gap: {green: 0.05, amber: 0.10}      # challenger Gini minus model Gini
+sensitivity_mean_shift: {green: 10, amber: 20}      # mean score points moved by a 10% shock
+missing_rate: {green: 0.01, amber: 0.05}
+parity: {coef_load_abs: 1.0e-12, coef_refit_abs: 1.0e-6, pd_abs: 1.0e-9}
+tier_matrix: {HH: 1, HM: 1, MH: 1, HL: 2, MM: 2, LH: 2, ML: 3, LM: 3, LL: 3}   # materiality+complexity
+validation_months_by_tier: {1: 12, 2: 24, 3: 36}
+monitoring_triggers: {score_psi: 0.25, gini_drop_rel: 0.10, jeffreys_failures: 1}
+rating_rule: {not_fit_if_red_at_least: 2, conditions_if_red_or_amber_at_least: 1}
+llm_prices_per_mtok: {input: 3.0, output: 15.0}   # edit to your provider's prices
+max_redevelop_attempts: 4
