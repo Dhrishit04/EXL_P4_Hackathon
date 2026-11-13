@@ -1,6 +1,7 @@
 # pd_model.R -- behavioural PD scorecard, card book (CR-PD-002) v2.3
 # base R only. dev sample -> WoE bins -> glm -> score. last touched 2021-03 JK
 # NB: do not change cut points without Credit Policy sign off
+# data: Apr-Sep 2005 payment history; target DEFAULT = default payment next month (Oct 2005)
 
 CUT_UTIL  <- c(0, 0.25, 0.5, 0.75, 1)       # cut(), right closed
 CUT_PAYR  <- c(0.02, 0.1, 0.5, 1)           # findInterval(), left closed
