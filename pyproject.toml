@@ -1,0 +1,53 @@
+[project]
+name = "modelproof"
+version = "0.1.0"
+description = "ModelProof: an agentic model risk factory (EXL x UCD Data & AI Hackathon 2026, Challenge 04)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "statsmodels",
+    "scikit-learn",
+    "fairlearn",
+    "pydantic>=2",
+    "pyyaml",
+    "jinja2",
+    "matplotlib",
+    "typer",
+    "python-dotenv",
+    "ucimlrepo",
+    "langgraph",
+    "langgraph-checkpoint-sqlite",
+    "langchain",
+]
+
+[project.optional-dependencies]
+anthropic = ["langchain-anthropic"]
+openai = ["langchain-openai"]
+google = ["langchain-google-genai"]
+tracking = ["mlflow"]
+ui = ["streamlit"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+modelproof = "modelproof.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/modelproof"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]
