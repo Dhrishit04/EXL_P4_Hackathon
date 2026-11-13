@@ -12,7 +12,8 @@ def test_monitoring_reproducible_and_saved():
     before = frame.copy(deep=True)
     result = simulate("CR-PD-002", frame, scorer)
     assert result == simulate("CR-PD-002", frame, scorer)
-    assert result.simulated and len(result.points) == 6
+    assert result.simulated
+    assert len(result.points) == 6
     assert frame.equals(before)
     expected = next((point.month for point in result.points if point.breaches), None)
     assert result.trigger_month == expected

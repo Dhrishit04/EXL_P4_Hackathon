@@ -47,3 +47,11 @@ def test_vif_and_bootstrap():
 def test_invalid_probabilities():
     with pytest.raises(ValueError):
         m.brier([0, 1], [2, -1])
+
+
+@pytest.mark.parametrize("alpha", [0, 1, -0.1, float("nan"), float("inf")])
+def test_jeffreys_rejects_invalid_significance(alpha):
+    frame = pd.DataFrame({"grade": ["A", "A"], "DEFAULT": [0, 1], "pd": [0.2, 0.3]})
+    with pytest.raises(ValueError, match="alpha"):
+        m.jeffreys_by_grade(frame, alpha=alpha)
+
