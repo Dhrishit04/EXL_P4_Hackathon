@@ -41,31 +41,60 @@ def world(tmp_path, monkeypatch):
         field="x",
         doc_value="a",
         code_value="b",
-        doc_evidence_id="d",
-        code_evidence_id="c",
+        doc_evidence_id="x",
+        code_evidence_id="y",
         verified=True,
     )
     flag = Finding(id="SEC-1", model_id="CR-PD-001", area="fairness", severity="high", ss123_principle="P3",
-                   description="personal_status is a proxy for sex")  # fmt: skip
+                   description="rbp.sas line 1: personal_status is a proxy for sex")  # fmt: skip
     inventory.upsert(
         rec(
             "CR-PD-001",
             doc_code_drifts=[drift, bogus],
             security_flags=[flag],
             downstream_models=["PR-RB-004"],
+            target_definition="bad = 1",
+            features=[{"name": "age"}, {"name": "personal_status"}],
         )
     )
-    inventory.upsert(rec("PR-RB-004", upstream_models=["CR-PD-001"], platform_language="SAS"))
+    inventory.upsert(
+        rec(
+            "PR-RB-004",
+            upstream_models=["CR-PD-001"],
+            platform_language="SAS",
+            documentation_status="missing",
+        )
+    )
     write(gold / "inventory_gold.yaml", yaml.dump({
-        "CR-PD-001": {"deterministic": {"platform_language": "sas", "downstream_models": ["PR-RB-004"], "upstream_models": ["X"]},
-                      "llm": {"model_type": "PD", "risk_tier": 1, "name_contains": ["cr-pd"]}}}))  # fmt: skip
+        "CR-PD-001": {"language": "sas", "downstream_models": ["PR-RB-004"], "upstream_models": ["X"],
+                      "model_type": "PD", "risk_tier": 1, "target": "bad", "features": ["personal_status", "age"]}}))  # fmt: skip
     write(gold / "seeded_drifts.yaml", yaml.dump([
-        {"id": "D1", "model_id": "CR-PD-001", "field": "cutoff", "doc_value": "0.5", "code_value": "0.6"},
-        {"id": "D2", "model_id": "CR-PD-001", "field": "other", "doc_value": "9", "code_value": "10"}]))  # fmt: skip
+        {"id": "D1", "model_id": "CR-PD-001", "field": "cutoff", "doc_file": "d.md", "doc_line": 3, "doc_value": "0.5",
+         "code_file": "c.sas", "code_line": 7, "true_value": "0.6"},
+        {"id": "D2", "model_id": "CR-PD-001", "field": "other", "doc_file": "d.md", "doc_line": 9, "doc_value": "9",
+         "code_file": "c.sas", "code_line": 20, "true_value": "10"}]))  # fmt: skip
+
+    def risk(i, m, k, d, **kw):
+        return {
+            "id": i,
+            "model_id": m,
+            "kind": k,
+            "description": d,
+            "file": "x/rbp.sas",
+            "line": 1,
+            "anchor": "a",
+            **kw,
+        }
+
     write(gold / "seeded_risks.yaml", yaml.dump([
-        {"id": "R1", "model_id": "CR-PD-001", "kind": "proxy", "keyword": "personal_status"},
-        {"id": "R2", "model_id": "PR-RB-004", "kind": "dependency", "keyword": "CR-PD-001"},
-        {"id": "R3", "model_id": "PR-RB-004", "kind": "injection", "keyword": "ignore previous"}]))  # fmt: skip
+        risk("R1", "CR-PD-001", "proxy_variable", "personal_status (sex proxy) is a predictor"),
+        risk("R2", "PR-RB-004", "dependency", "reads the grade dataset written by CR-PD-001"),
+        risk("R3", "PR-RB-004", "prompt_injection", "hidden instruction"),
+        risk("R4", "CR-PD-001", "dead_variable", "debt_ratio is computed and never used"),
+        risk("R5", "CR-PD-001", "stale_comment", "comment says 520", anchor="cutoff 520 per Committee"),
+        risk("R6", "PR-RB-004", "undocumented_model", "no document")]))  # fmt: skip
+    write(art / "CR-PD-001" / "facts.json", {"dead_variables": ["debt_ratio"], "parameters": {"CUTOFF": {}, "CUTOFF_comment": {}},
+          "evidence": [{"id": "d", "path": "d.md", "line_start": 3, "line_end": 3}, {"id": "c", "path": "c.sas", "line_start": 7, "line_end": 8}]})  # fmt: skip
 
     def u(hit, mid, i, o, c):
         return {
@@ -130,11 +159,18 @@ def test_collect_from_artifacts_and_gold(world):
         "total": 3,
         "accuracy": 0.6667,
     }  # upstream_models wrong
-    assert acc["llm"] == {"correct": 3, "total": 3, "accuracy": 1.0}
+    assert acc["llm"] == {"correct": 4, "total": 4, "accuracy": 1.0}
     d = m["drift_detection"]
     assert (d["predicted"], d["true_positives"], d["gold_found"]) == (2, 1, 1)
     assert d["precision"] == 0.5 and d["recall"] == 0.5
-    assert m["seeded_risks"]["per_risk"] == {"R1": True, "R2": True, "R3": False}
+    assert m["seeded_risks"]["per_risk"] == {
+        "R1": True,
+        "R2": True,
+        "R3": False,
+        "R4": True,
+        "R5": True,
+        "R6": True,
+    }
     assert (
         m["grounding"]["documentation"]["CR-PD-001"] == 0.8
         and m["grounding"]["validation_narrative"] == 0.5
@@ -173,3 +209,14 @@ def test_main_writes_metrics_and_refreshes_readme_table(world):
     text = (world / "README.md").read_text()
     assert text.startswith("intro\n") and text.endswith("outro\n") and "OLD" not in text
     assert "| Parity certificate | PASS |" in text and "| Self-heal attempts | 1 |" in text
+
+
+def test_real_gold_files_parse_and_score_empty_artifacts_as_zero(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "ARTIFACTS", tmp_path)
+    m = bm.collect()  # real eval/gold, no artifacts: every gold item is counted, none is credited
+    assert (
+        m["inventory_accuracy"]["deterministic"]["total"] > 0
+        and m["inventory_accuracy"]["llm"]["correct"] == 0
+    )
+    assert m["drift_detection"]["gold"] >= 10 and m["drift_detection"]["recall"] == 0.0
+    assert m["seeded_risks"]["total"] >= 10 and m["seeded_risks"]["detected"] == 0

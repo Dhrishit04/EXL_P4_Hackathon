@@ -91,17 +91,31 @@ def _llm_usage(usage: list[dict]) -> dict:
 
 
 # ------------------------------------------------------------------ accuracy against ground truth
-def _match(exp, got) -> bool:
-    if isinstance(exp, list):
-        return {_norm(x) for x in exp} == {_norm(x) for x in (got or [])}
-    return _norm(exp) == _norm(got)
+# Gold inventory is flat per model (eval/gold/inventory_gold.yaml). Fields that code computes are scored
+# apart from fields the LLM proposes, so the two accuracies are never blended.
+DETERMINISTIC = {
+    "language": "platform_language",
+    "upstream_models": "upstream_models",
+    "downstream_models": "downstream_models",
+    "documentation_status": "documentation_status",
+}
+
+
+def _names(rec: dict) -> list[str]:
+    return [f["name"] for f in rec["features"]]
 
 
 def _field_ok(key: str, exp, rec: dict) -> bool:
-    if key.endswith("_contains"):
-        text = _norm(json.dumps(rec.get(key[: -len("_contains")], ""), default=str))
-        return all(_norm(s) in text for s in exp)
-    return _match(exp, rec.get(key))
+    if (
+        key == "features"
+    ):  # every gold feature appears (substring either way) among the predicted features
+        return all(any(_vm(e, n) for n in _names(rec)) for e in exp)
+    if key == "target":  # the target column is named in the target definition
+        return _norm(exp) in _norm(rec["target_definition"])
+    got = rec.get(DETERMINISTIC.get(key, key))
+    if isinstance(exp, list):
+        return {_norm(x) for x in exp} == {_norm(x) for x in (got or [])}
+    return _norm(exp) == _norm(got)
 
 
 def _inventory_accuracy(recs: dict[str, dict], gold: dict | None) -> dict | None:
@@ -111,10 +125,8 @@ def _inventory_accuracy(recs: dict[str, dict], gold: dict | None) -> dict | None
     for section in ("deterministic", "llm"):
         ok = tot = 0
         for mid, g in gold.items():
-            res = {
-                k: bool(mid in recs and _field_ok(k, v, recs[mid]))
-                for k, v in (g.get(section) or {}).items()
-            }
+            keys = [k for k in g if (k in DETERMINISTIC) == (section == "deterministic")]
+            res = {k: bool(mid in recs and _field_ok(k, g[k], recs[mid])) for k in keys}
             out["per_model"].setdefault(mid, {})[section] = res
             ok, tot = ok + sum(res.values()), tot + len(res)
         out[section] = {"correct": ok, "total": tot, "accuracy": _ratio(ok, tot)}
@@ -126,48 +138,98 @@ def _vm(a, b) -> bool:
     return bool(a and b) and (a in b or b in a)
 
 
+def _evidence(mid: str) -> dict[str, dict]:
+    return {
+        e["id"]: e for e in (_json(config.ARTIFACTS / mid / "facts.json") or {}).get("evidence", [])
+    }
+
+
+def _at(ev: dict | None, file: str, line: int) -> bool:
+    return bool(ev and ev["path"] == file and ev["line_start"] <= line <= ev["line_end"])
+
+
+def _drift_matches(g: dict, d: dict, ev: dict[str, dict]) -> bool:
+    """Same location (both evidence lines cover the gold doc and code lines) or same values."""
+    where = _at(ev.get(d["doc_evidence_id"]), g["doc_file"], g["doc_line"]) and _at(
+        ev.get(d["code_evidence_id"]), g["code_file"], g["code_line"]
+    )
+    code_gold = g.get("code_value", g.get("true_value", ""))
+    return where or (_vm(g["doc_value"], d["doc_value"]) and _vm(code_gold, d["code_value"]))
+
+
 def _drift_scores(recs: dict[str, dict], gold: list | None) -> dict | None:
     if gold is None:
         return None
+    evs = {mid: _evidence(mid) for mid in recs}
     pred = [(mid, d) for mid, r in recs.items() for d in r["doc_code_drifts"] if d["verified"]]
     hit_gold, tp = set(), 0
     for mid, d in pred:
-        for g in gold:
-            if (
-                g["model_id"] == mid
-                and _vm(g["doc_value"], d["doc_value"])
-                and _vm(g["code_value"], d["code_value"])
-            ):
-                hit_gold.add(g["id"])
-                tp += 1
-                break
+        hits = [g["id"] for g in gold if g["model_id"] == mid and _drift_matches(g, d, evs[mid])]
+        hit_gold.update(hits)
+        tp += bool(hits)
     return {
         "predicted": len(pred), "gold": len(gold), "true_positives": tp, "gold_found": len(hit_gold),
         "precision": _ratio(tp, len(pred)), "recall": _ratio(len(hit_gold), len(gold)),
     }  # fmt: skip
 
 
-def _risk_hay(kind: str, mid: str, rec: dict) -> list[str]:
-    flags = [f"{f['id']} {f['area']} {f['description']}" for f in rec["security_flags"]]
-    if kind == "dead_variable":
-        return flags + (_json(config.ARTIFACTS / mid / "facts.json") or {}).get(
-            "dead_variables", []
-        )
+def _mentions(word: str, texts: list[str]) -> bool:
+    pat = re.compile(rf"(?<![A-Za-z0-9_]){re.escape(word)}(?![A-Za-z0-9])", re.I)
+    return any(pat.search(t) for t in texts)
+
+
+def _risk_detected(r: dict, rec: dict, facts: dict, report: dict) -> bool:
+    kind, desc = r["kind"], r["description"]
+    word = re.match(r"[\w$]+", desc).group(0)  # gold descriptions start with the variable name
+    flags = [f"{f['area']} {f['description']}" for f in rec["security_flags"]]
+    notes = (
+        flags
+        + rec["limitations"]
+        + [f"{d['field']} {d['doc_value']} {d['code_value']}" for d in rec["doc_code_drifts"]]
+    )
+    if kind == "prompt_injection":
+        return any(file_name in f for f in flags for file_name in [r["file"].rsplit("/", 1)[-1]])
     if kind == "dependency":
-        return rec["upstream_models"]
-    return flags  # proxy, injection
+        return any(
+            i in rec["upstream_models"] for i in re.findall(r"[A-Z]{2}-[A-Z]{2}-\d{3}", desc)
+        )
+    if kind == "undocumented_model":
+        return rec["documentation_status"] == "missing"
+    if kind == "dead_variable":
+        return word.lower() in {v.lower() for v in facts.get("dead_variables", [])} or _mentions(
+            word, notes
+        )
+    if (
+        kind == "stale_comment"
+    ):  # the extractor records the comment's number as `<constant>_comment`
+        name = re.match(r"[A-Za-z _]+", r["anchor"]).group(0).strip().replace(" ", "_").lower()
+        return any(
+            k.lower().endswith("_comment") and k.lower().startswith(name)
+            for k in facts.get("parameters", {})
+        )
+    findings = [f"{f['area']} {f['description']}" for f in report.get("findings", [])] + list(
+        (report.get("narrative") or {}).values()
+    )
+    return _mentions(word, notes + findings)  # proxy_variable, protected_attribute_used
 
 
 def _risk_scores(recs: dict[str, dict], gold: list | None) -> dict | None:
     if gold is None:
         return None
+    report = _json(config.ARTIFACTS / TARGET / "validation_report.json") or {}
     res = {
-        r["id"]: bool(r["model_id"] in recs and any(
-            _norm(r["keyword"]) in _norm(h) for h in _risk_hay(r["kind"], r["model_id"], recs[r["model_id"]])
+        r["id"]: bool(r["model_id"] in recs and _risk_detected(
+            r, recs[r["model_id"]], _json(config.ARTIFACTS / r["model_id"] / "facts.json") or {},
+            report if r["model_id"] == TARGET else {},
         ))
         for r in gold
     }  # fmt: skip
-    return {"detected": sum(res.values()), "total": len(res), "per_risk": res}
+    kinds = Counter(r["kind"] for r in gold)
+    found = Counter(r["kind"] for r in gold if res[r["id"]])
+    return {
+        "detected": sum(res.values()), "total": len(res), "per_risk": res,
+        "per_kind": {k: f"{found[k]}/{n}" for k, n in kinds.items()},
+    }  # fmt: skip
 
 
 # ------------------------------------------------------------------ artifact summaries
