@@ -3,9 +3,9 @@
 import matplotlib
 import numpy as np
 import pandas as pd
-from modelproof.schemas import MonitoringPoint, MonitoringResult
 
 from modelproof import audit, config, metrics
+from modelproof.schemas import MonitoringPoint, MonitoringResult
 from modelproof.validation import scored_rows
 
 

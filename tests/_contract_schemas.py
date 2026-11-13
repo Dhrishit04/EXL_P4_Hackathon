@@ -3,7 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-Level = Literal["H", "M", "L"]; RAG = Literal["green", "amber", "red"]
+Level = Literal["H", "M", "L"]
+RAG = Literal["green", "amber", "red"]
 class Evidence(BaseModel):
     id: str
     kind: Literal["code","doc","metric","data"]
@@ -155,3 +156,4 @@ class MonitoringResult(BaseModel):
     points: list[MonitoringPoint]
     trigger_month: int | None
     simulated: bool = True
+

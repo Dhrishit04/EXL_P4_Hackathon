@@ -48,3 +48,4 @@ if missing('modelproof.audit'):
 def isolate_artifacts(tmp_path, monkeypatch):
     from modelproof import config
     monkeypatch.setattr(config, 'ARTIFACTS', tmp_path / 'artifacts')
+    monkeypatch.setattr(config, 'ROOT', ROOT)
