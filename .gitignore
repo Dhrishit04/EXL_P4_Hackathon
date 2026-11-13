@@ -10,3 +10,13 @@ mlruns/
 .DS_Store
 *.egg-info/
 # NOTE: artifacts/ and .cache/llm/ are committed on purpose (demo mode and LLM replay cache)
+
+# Local development instructions and build prompts
+REDACTED
+AGENTS.md
+.REDACTED/
+.codex/
+.github/copilot-instructions.md
+team/
+docs/SPEC.md
+docs/AI_TOOLS.md
